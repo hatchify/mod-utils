@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// SyncDeps will refresh the current dir to master, reset mod files and push changes if there are any
-func SyncDeps(dir, commitMessage string) (err error) {
+// Sync will refresh the current dir to master, reset mod files and push changes if there are any
+func Update(dir, commitMessage string) (err error) {
 	fmt.Println(dir + ": Checking out master...")
 	if err = runCmd(dir, "git checkout", "git", "checkout", "master"); err != nil {
 		fmt.Println(dir + ": Checkout failed :(")
@@ -38,6 +38,8 @@ func SyncDeps(dir, commitMessage string) (err error) {
 		fmt.Println(dir + ": Mod init failed :(")
 		return
 	}
+
+	runCmd(dir, "go get", "go", "get", "-u")
 
 	if err = runCmd(dir, "go mod tidy", "go", "mod", "tidy"); err != nil {
 		fmt.Println(dir + ": Mod init failed :(")
