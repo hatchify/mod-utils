@@ -1,8 +1,9 @@
-package main
+package sync
 
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 func runCmd(dir, tag, name string, args ...string) (err error) {
@@ -11,6 +12,20 @@ func runCmd(dir, tag, name string, args ...string) (err error) {
 	if err = cmd.Run(); err != nil {
 		return handleError(tag, err)
 	}
+
+	return
+}
+
+func cmdOutput(dir, tag, name string, args ...string) (output string, err error) {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	stdout, err := cmd.Output()
+	if err != nil {
+		err = handleError(tag, err)
+		return
+	}
+
+	output = strings.TrimSpace(string(stdout))
 
 	return
 }
