@@ -1,3 +1,3 @@
-module github.com/hatchify/mod-updator
+module github.com/hatchify/mod-sync
 
 go 1.14
