@@ -2,6 +2,8 @@ package sync
 
 import (
 	"strings"
+
+	sort "github.com/hatchify/mod-sort"
 )
 
 // ModInit calls go mod init on a given lib
@@ -28,9 +30,25 @@ func (lib *Library) ModClear() (hasModFile, hasSumFile bool) {
 	return
 }
 
+// ModAddDeps adds a dep@version to go.mod to force-update or force-downgrade any deps in the filtered chain
+func (lib *Library) ModAddDeps(listHead *sort.FileNode) {
+	for itr := listHead; itr != nil; itr = itr.Next {
+		// Create new node to add to independent list on lib
+		var node sort.FileNode
+		node.File = itr.File
+		lib.AddDep(&node)
+	}
+}
+
 // ModSetDeps adds a dep@version to go.mod to force-update or force-downgrade any deps in the filtered chain
 func (lib *Library) ModSetDeps() {
-
+	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
+		if len(itr.File.Version) == 0 {
+			lib.File.Output("Error: no version to set for " + itr.File.Path)
+		} else {
+			lib.File.RunCmd("go", "get", itr.File.Path+"@"+itr.File.Version)
+		}
+	}
 }
 
 // ModDeploy will commit and push local changes to the current branch before switching to master
@@ -97,6 +115,8 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		lib.File.Output("Mod init failed :(")
 		return
 	}
+
+	lib.ModSetDeps()
 
 	if err = lib.File.RunCmd("go", "mod", "tidy"); err != nil {
 		lib.File.Output("Mod tidy failed :(")
