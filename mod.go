@@ -149,6 +149,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		return
 	}
 
+	lib.File.RunCmd("rm", "go.sum")
 	lib.ModSetDeps()
 
 	if err = lib.ModTidy(); err != nil {
