@@ -145,9 +145,9 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		lib.File.Output("Deps up to date!")
 	}
 
-	if err = lib.File.Push(); err != nil {
+	if pushErr := lib.File.Push(); pushErr != nil {
 		lib.File.Output("Push failed :( check local changes")
-		return
+		return pushErr
 	}
 
 	lib.File.Output("Sync Complete!")
