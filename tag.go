@@ -78,7 +78,7 @@ func (lib *Library) ShouldTag() (shouldTag bool) {
 		return true
 	}
 
-	lib.File.Output("Tags up to date @ " + tag + "!")
+	lib.File.Output("Tag up to date @ " + tag + "!")
 	return
 }
 

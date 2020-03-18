@@ -54,7 +54,9 @@ func (lib *Library) ModSetDeps() {
 			}
 
 			if lib.File.RunCmd("go", "get", url+"@"+itr.File.Version) == nil {
-				lib.File.Output("Set " + itr.File.Path + " @ " + itr.File.Version)
+				if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
+					lib.File.Output("Updated" + itr.File.Path + " @ " + itr.File.Version)
+				}
 			} else {
 				lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
 			}
@@ -113,23 +115,24 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 
 	lib.File.Output("Checking deps...")
 
-	if err = lib.File.RunCmd("rm", "go.mod"); err != nil {
+	hasMod, hasSum := lib.ModClear()
+	if !hasMod {
 		lib.File.Output("No mod file found. Skipping.")
 		return
 	}
 
-	if err = lib.File.RunCmd("rm", "go.sum"); err != nil {
+	if !hasSum {
 		lib.File.Output("No sum file found.")
 	}
 
-	if err = lib.File.RunCmd("go", "mod", "init"); err != nil {
+	if err = lib.ModInit(); err != nil {
 		lib.File.Output("Mod init failed :(")
 		return
 	}
 
 	lib.ModSetDeps()
 
-	if err = lib.File.RunCmd("go", "mod", "tidy"); err != nil {
+	if err = lib.ModTidy(); err != nil {
 		lib.File.Output("Mod tidy failed :(")
 		return
 	}
