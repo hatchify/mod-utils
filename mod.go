@@ -48,6 +48,7 @@ func (lib *Library) ModSetDeps() {
 		if len(itr.File.Version) == 0 {
 			lib.File.Output("Error: no version to set for " + itr.File.Path)
 		} else {
+			lib.File.Output("Setting " + itr.File.Path + " @ " + itr.File.Version)
 			lib.File.RunCmd("go", "get", itr.File.Path+"@"+itr.File.Version)
 		}
 	}
