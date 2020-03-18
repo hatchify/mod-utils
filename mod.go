@@ -32,11 +32,13 @@ func (lib *Library) ModClear() (hasModFile, hasSumFile bool) {
 
 // ModAddDeps adds a dep@version to go.mod to force-update or force-downgrade any deps in the filtered chain
 func (lib *Library) ModAddDeps(listHead *sort.FileNode) {
-	for itr := listHead; itr != nil; itr = itr.Next {
-		// Create new node to add to independent list on lib
-		var node sort.FileNode
-		node.File = itr.File
-		lib.AddDep(&node)
+	for itr := listHead; itr != nil && itr.File.Path != lib.File.Path; itr = itr.Next {
+		if lib.File.ImportsDirectly(itr.File) {
+			// Create new node to add to independent list on lib
+			var node sort.FileNode
+			node.File = itr.File
+			lib.AddDep(&node)
+		}
 	}
 }
 
