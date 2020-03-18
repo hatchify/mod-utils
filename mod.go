@@ -79,15 +79,15 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 		}
 
 		if len(version) == 0 {
-			message = "GoMu: Deploy local changes"
+			message = "gomu: Deploy local changes"
 			// Set old version of libs in case they weren't updated previously
 			lib.File.Version = version
 
 		} else {
-			message = "GoMu: Deploy local changes before incrementing version from " + version
+			message = "gomu: Deploy local changes before incrementing version from " + version
 		}
 	} else {
-		message = "GoMu: Deploy local changes before updating version to " + tag
+		message = "gomu: Deploy local changes before updating version to " + tag
 	}
 
 	if lib.File.Commit(message) == nil {
@@ -162,7 +162,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		return
 	}
 
-	message := "GoMu: " + commitMessage + "\n"
+	message := "gomu: " + commitMessage + "\n"
 	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
 		url := itr.File.GetGoURL()
 
