@@ -144,18 +144,8 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 
 	lib.File.Output("Checking deps...")
 
-	hasMod, hasSum := lib.ModClear()
-	if !hasMod {
+	if err = lib.ModTidy(); err != nil {
 		lib.File.Output("No mod file found. Skipping.")
-		return
-	}
-
-	if !hasSum {
-		lib.File.Output("No sum file found.")
-	}
-
-	if err = lib.ModInit(); err != nil {
-		lib.File.Output("Mod init failed :(")
 		return
 	}
 
