@@ -47,11 +47,9 @@ func (lib *Library) ModSetDeps() {
 	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
 		if len(itr.File.Version) == 0 {
 			lib.File.Output("Error: no version to set for " + itr.File.Path)
+
 		} else {
-			url, err := itr.File.GetGoURL()
-			if err != nil {
-				return
-			}
+			url := itr.File.GetGoURL()
 
 			if lib.File.RunCmd("go", "get", url+"@"+itr.File.Version) == nil {
 				if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
@@ -161,10 +159,7 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 
 	message := "GoMu: " + commitMessage + "\n"
 	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
-		url, err := itr.File.GetGoURL()
-		if err != nil {
-			url = itr.File.Path
-		}
+		url := itr.File.GetGoURL()
 
 		if itr.File.Updated {
 			message += "\nUpdated " + url + "@" + itr.File.Version
