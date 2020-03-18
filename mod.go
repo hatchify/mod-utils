@@ -115,7 +115,6 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 
 	if err = lib.File.Fetch(); err != nil {
 		lib.File.Output("Fetch failed :(")
-		return
 	}
 
 	if err = lib.File.Pull(); err != nil {
@@ -123,10 +122,7 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		return
 	}
 
-	if err = lib.File.MergeMasterIntoLocal(); err != nil {
-		lib.File.Output("Merge master into local failed :(")
-		return
-	}
+	lib.File.MergeMasterIntoLocal()
 
 	lib.File.Output("Checking deps...")
 
