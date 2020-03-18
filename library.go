@@ -9,10 +9,10 @@ import (
 type Library struct {
 	File *common.FileWrapper
 
-	updatedDeps sort.FileList
+	updatedDeps *sort.FileNode
 }
 
 // AddDep will ensure go.mod sets specific version of node.file when syncing
 func (lib *Library) AddDep(node *sort.FileNode) {
-	node.InsertInto(lib.updatedDeps)
+	node.InsertInto(&lib.updatedDeps)
 }
