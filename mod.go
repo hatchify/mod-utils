@@ -55,7 +55,7 @@ func (lib *Library) ModSetDeps() {
 
 			if lib.File.RunCmd("go", "get", url+"@"+itr.File.Version) == nil {
 				if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
-					lib.File.Output("Updated" + itr.File.Path + " @ " + itr.File.Version)
+					lib.File.Output("Updated " + url + " @ " + itr.File.Version)
 				}
 			} else {
 				lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
@@ -73,22 +73,31 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 	// Ignore changes to go mod files (prevents committing local replacements)
 	lib.File.Reset("go.*")
 
+	message := ""
 	if len(tag) == 0 {
-		version := ""
-		if !strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
+		version := lib.File.Version
+		if len(version) == 0 && !strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
 			version = lib.GetCurrentTag()
 		}
 
-		// Set old version of libs in case they weren't updated previously
-		lib.File.Version = version
-		if lib.File.Commit("Deploy local changes before incrementing version from "+version) == nil {
-			deployed = true
-		}
+		if len(version) == 0 {
+			message = "GoMu: Deploy local changes"
+			// Set old version of libs in case they weren't updated previously
+			lib.File.Version = version
 
-	} else {
-		if lib.File.Commit("Deploy local changes before updating version to "+tag) == nil {
-			deployed = true
+		} else {
+			message = "GoMu: Deploy local changes before incrementing version from " + version
 		}
+	} else {
+		message = "GoMu: Deploy local changes before updating version to " + tag
+	}
+
+	if lib.File.Commit(message) == nil {
+		deployed = true
+		lib.File.Output("Deploying local changes...")
+		lib.File.Push()
+	} else {
+		lib.File.Output("No changes to deploy!")
 	}
 
 	return
@@ -142,7 +151,21 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		return
 	}
 
-	if err = lib.File.Commit(commitMessage); err == nil {
+	message := "GoMu: " + commitMessage + "\n"
+	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
+		url, err := itr.File.GetGoURL()
+		if err != nil {
+			url = itr.File.Path
+		}
+
+		if itr.File.Updated {
+			message += "\nUpdated " + url + "@" + itr.File.Version
+		} else {
+			message += "\nSet " + url + "@" + itr.File.Version
+		}
+	}
+
+	if err = lib.File.Commit(message); err == nil {
 		lib.File.Output("Updating mod files...")
 	} else {
 		lib.File.Output("Deps up to date!")
