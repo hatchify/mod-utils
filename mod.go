@@ -176,6 +176,6 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		return pushErr
 	}
 
-	lib.File.Output("Sync Complete!")
+	lib.File.Output("Mod Sync Complete!")
 	return
 }
