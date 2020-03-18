@@ -48,8 +48,18 @@ func (lib *Library) ModSetDeps() {
 		if len(itr.File.Version) == 0 {
 			lib.File.Output("Error: no version to set for " + itr.File.Path)
 		} else {
-			lib.File.Output("Setting " + itr.File.Path + " @ " + itr.File.Version)
-			lib.File.RunCmd("go", "get", itr.File.Path+"@"+itr.File.Version)
+			url, err := itr.File.GetGoURL()
+			if err != nil {
+				return
+			}
+
+			lib.File.Output("Getting " + url + " @ " + itr.File.Version)
+
+			if lib.File.RunCmd("go", "get", url+"@"+itr.File.Version) == nil {
+				lib.File.Output("Set " + itr.File.Path + " @ " + itr.File.Version)
+			} else {
+				lib.File.Output("Error: no version to set for " + itr.File.Path)
+			}
 		}
 	}
 }
