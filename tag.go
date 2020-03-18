@@ -7,9 +7,9 @@ import (
 // TagLib updates the lib to the provided tag, or increments if git-tagger is able to
 func (lib *Library) TagLib(tag string) (newTag string) {
 	if len(tag) == 0 {
-		// Use git-tagger to increment
 		lib.File.Output("Updating tag...")
 
+		// Use git-tagger to increment
 		if lib.File.RunCmd("git-tagger") != nil {
 			lib.File.Output("Unable to increment tag.")
 			return
