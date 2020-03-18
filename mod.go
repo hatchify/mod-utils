@@ -93,12 +93,20 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 	}
 
 	if lib.File.Commit(message) == nil {
+		// Successful commit, push changes
 		deployed = true
 		lib.File.Output("Deploying local changes...")
-		lib.File.Push()
+		if lib.File.Push() == nil {
+			lib.File.Output("Deploy Complete!")
+		} else {
+			lib.File.Output("Deploy Failed :(")
+		}
 	} else {
 		lib.File.Output("No changes to deploy!")
 	}
+
+	// Re-stash local changes to go.mod
+	lib.File.Stash()
 
 	return
 }
