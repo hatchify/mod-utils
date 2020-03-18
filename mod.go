@@ -139,17 +139,17 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		return
 	}
 
-	if err = lib.File.Commit(commitMessage); err != nil {
+	if err = lib.File.Commit(commitMessage); err == nil {
+		lib.File.Output("Updating mod files...")
+	} else {
 		lib.File.Output("Deps up to date!")
-		return
 	}
 
-	lib.File.Output("Updating mod files...")
 	if err = lib.File.Push(); err != nil {
-		lib.File.Output("Update failed :(")
+		lib.File.Output("Push failed :( check local changes")
 		return
 	}
 
-	lib.File.Output("Deps updated!")
+	lib.File.Output("Sync Complete!")
 	return
 }
