@@ -110,8 +110,14 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 }
 
 // ModUpdate will refresh the current dir to master, reset mod files and push changes if there are any
-func (lib *Library) ModUpdate(commitMessage string) (err error) {
-	lib.File.Output("Syncing local with master...")
+func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
+	lib.File.Output("Syncing " + branch + " with origin master...")
+
+	if branch != "master" {
+		if err = lib.File.CheckoutBranch("master"); err != nil {
+			lib.File.Output("Checkout master failed :(")
+		}
+	}
 
 	if err = lib.File.Fetch(); err != nil {
 		lib.File.Output("Fetch failed :(")
@@ -122,7 +128,19 @@ func (lib *Library) ModUpdate(commitMessage string) (err error) {
 		return
 	}
 
-	lib.File.MergeMasterIntoLocal()
+	if branch != "master" {
+		if err = lib.File.CheckoutBranch(branch); err != nil {
+			lib.File.Output("Checkout " + branch + " failed :(")
+		}
+		if err = lib.File.Merge("master"); err != nil {
+			lib.File.Output("Merge master into " + branch + " failed :(")
+		}
+		lib.File.RunCmd("git", "checkout", "--theirs", "go.mod")
+		lib.File.RunCmd("git", "checkout", "--theirs", "go.sum")
+		if err = lib.File.Merge("master"); err != nil {
+			lib.File.Output("Merge master into " + branch + " failed :(")
+		}
+	}
 
 	lib.File.Output("Checking deps...")
 
