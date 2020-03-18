@@ -53,12 +53,10 @@ func (lib *Library) ModSetDeps() {
 				return
 			}
 
-			lib.File.Output("Getting " + url + " @ " + itr.File.Version)
-
 			if lib.File.RunCmd("go", "get", url+"@"+itr.File.Version) == nil {
 				lib.File.Output("Set " + itr.File.Path + " @ " + itr.File.Version)
 			} else {
-				lib.File.Output("Error: no version to set for " + itr.File.Path)
+				lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
 			}
 		}
 	}
