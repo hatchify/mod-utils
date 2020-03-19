@@ -46,7 +46,9 @@ func (lib *Library) ModAddDeps(listHead *sort.FileNode) {
 			// Create new node to add to independent list on lib with same file ref
 			var node sort.FileNode
 			node.File = itr.File
+			lib.File.Output("Adding dep " + lib.File.Path + "...")
 			lib.AddDep(&node)
+			lib.File.Output("Added!")
 		}
 	}
 }
