@@ -84,7 +84,7 @@ func (lib *Library) ModReplaceLocalFor(file sort.FileNode) (updated bool) {
 func (lib *Library) ModReplaceLocal() (updated bool) {
 	localSuffix := ""
 	for fileItr := lib.updatedDeps; fileItr != nil; fileItr = fileItr.Next {
-		localSuffix += "\nreplace " + fileItr.File.GetGoURL() + " => ../../../" + fileItr.File.GetGoURL() + "\n"
+		localSuffix += "\nreplace " + fileItr.File.GetGoURL() + " => " + fileItr.File.AbsPath() + "\n"
 	}
 
 	return lib.AppendToModfile(localSuffix)
