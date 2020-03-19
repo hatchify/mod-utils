@@ -76,15 +76,15 @@ func (lib *Library) ModSetDeps() {
 }
 
 // SetLocalDep adds replace clause for provided file
-func (lib *Library) SetLocalDep(file sort.FileNode) (updated bool) {
-	return lib.AppendToModfile("replace " + file.File.GetGoURL() + " => ../../../" + file.File.GetGoURL())
+func (lib *Library) ModReplaceLocalFor(file sort.FileNode) (updated bool) {
+	return lib.AppendToModfile("\nreplace " + file.File.GetGoURL() + " => ../../../" + file.File.GetGoURL())
 }
 
 // SetLocalDeps adds replace clause for all updated deps
-func (lib *Library) SetLocalDeps() (updated bool) {
+func (lib *Library) ModReplaceLocal() (updated bool) {
 	localSuffix := ""
 	for fileItr := lib.updatedDeps; fileItr != nil; fileItr = fileItr.Next {
-		localSuffix += "replace " + fileItr.File.GetGoURL() + " => ../../../" + fileItr.File.GetGoURL() + "\n"
+		localSuffix += "\nreplace " + fileItr.File.GetGoURL() + " => ../../../" + fileItr.File.GetGoURL() + "\n"
 	}
 
 	return lib.AppendToModfile(localSuffix)
