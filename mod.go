@@ -96,7 +96,7 @@ func (lib *Library) AppendToModfile(text string) bool {
 	f, err := os.OpenFile(path.Join(lib.File.AbsPath(), "go.mod"),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		lib.File.Output("Unable to open mod file")
+		lib.File.Output("Unable to open mod file: " + path.Join(lib.File.AbsPath(), "go.mod"))
 		return false
 	}
 	defer f.Close()
@@ -200,9 +200,14 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		lib.File.Output("No sum file found. No dependencies sorted.")
 	}
 
+	if err = lib.ModInit(); err != nil {
+		lib.File.Output("Mod init failed :(")
+		return
+	}
+
 	lib.ModSetDeps()
 
-	if err = lib.ModInit(); err != nil {
+	if err = lib.ModTidy(); err != nil {
 		lib.File.Output("Mod tidy failed :(")
 		return
 	}
