@@ -51,7 +51,7 @@ func (lib *Library) ModSetDeps() {
 		} else {
 			url := itr.File.GetGoURL()
 
-			if lib.File.RunCmd("go", "get", url+"@"+itr.File.Version) == nil {
+			if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
 				if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
 					lib.File.Output("Updated " + url + " @ " + itr.File.Version)
 				}
@@ -132,11 +132,6 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		if err = lib.File.CheckoutBranch(branch); err != nil {
 			lib.File.Output("Checkout " + branch + " failed :(")
 		}
-		if err = lib.File.Merge("master"); err != nil {
-			lib.File.Output("Merge master into " + branch + " failed :(")
-		}
-		lib.File.RunCmd("git", "checkout", "--theirs", "go.mod")
-		lib.File.RunCmd("git", "checkout", "--theirs", "go.sum")
 		if err = lib.File.Merge("master"); err != nil {
 			lib.File.Output("Merge master into " + branch + " failed :(")
 		}
