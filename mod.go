@@ -75,12 +75,12 @@ func (lib *Library) ModSetDeps() {
 	lib.AppendToModfile("// *** Separate Local Deps *** \\\\\n")
 }
 
-// SetLocalDep adds replace clause for provided file
+// ModReplaceLocalFor adds replace clause for provided file
 func (lib *Library) ModReplaceLocalFor(file sort.FileNode) (updated bool) {
 	return lib.AppendToModfile("\nreplace " + file.File.GetGoURL() + " => ../../../" + file.File.GetGoURL())
 }
 
-// SetLocalDeps adds replace clause for all updated deps
+// ModReplaceLocal adds replace clause for all updated deps
 func (lib *Library) ModReplaceLocal() (updated bool) {
 	localSuffix := ""
 	for fileItr := lib.updatedDeps; fileItr != nil; fileItr = fileItr.Next {
