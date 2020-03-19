@@ -46,9 +46,7 @@ func (lib *Library) ModAddDeps(listHead *sort.FileNode) {
 			// Create new node to add to independent list on lib with same file ref
 			var node sort.FileNode
 			node.File = itr.File
-			lib.File.Output("Adding dep " + itr.File.Path + "...")
 			lib.AddDep(&node)
-			lib.File.Output("Added!")
 		}
 	}
 }
@@ -199,7 +197,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 	}
 
 	// Remove go sum to prevent mess from adding up
-	if lib.File.RunCmd("rm", "go.sum") == nil {
+	if lib.File.RunCmd("rm", "go.sum") != nil {
 		// No dependencies found. If this is unexpected for a given lib, something is out of sync
 		lib.File.Output("No sum file found. No dependencies sorted.")
 	}
