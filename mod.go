@@ -107,6 +107,8 @@ func (lib *Library) AppendToModfile(text string) bool {
 		return false
 	}
 
+	lib.File.Debug("Appended " + text + " to mod file")
+
 	// Write successful
 	return true
 }
