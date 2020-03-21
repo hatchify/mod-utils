@@ -162,28 +162,10 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 
 // ModUpdate will refresh the current dir to master, reset mod files and push changes if there are any
 func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
-	lib.File.Output("Updating <" + branch + "> with latest origin master...")
-
-	if err = lib.File.Fetch(); err != nil {
-		lib.File.Output("Fetch failed :(")
-	}
-
-	if len(branch) > 0 && branch != "master" {
-		if err = lib.File.CheckoutBranch(branch); err != nil {
-			lib.File.Output("Checkout " + branch + " failed :(")
-		}
-
-		if err = lib.File.Pull(); err != nil {
-			lib.File.Output("Pull failed :(")
-			return
-		}
-
-		if err = lib.File.RunCmd("git", "merge", "origin/master"); err != nil {
-			lib.File.Output("Merge master into " + branch + " failed :(")
-		}
-	}
-
 	lib.File.Output("Checking deps...")
+	if lib.File.Pull() != nil {
+		lib.File.Output("Git pull failed :(")
+	}
 
 	// Remove go.mod, ignore lib if not found (not a mod tracked lib)
 	if lib.File.RunCmd("rm", "go.mod") != nil {

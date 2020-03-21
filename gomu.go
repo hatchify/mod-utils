@@ -344,6 +344,6 @@ func (mu *MU) Perform() {
 	}
 
 	if !mu.closer.Close(nil) {
-		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes"))
+		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes in %v", mu.Options.TargetDirectories))
 	}
 }
