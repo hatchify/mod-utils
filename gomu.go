@@ -120,13 +120,10 @@ func RunThen(mu *MU, complete func(mu *MU)) {
 
 // Close handles cleanup
 func (mu *MU) Close() {
-	if mu.closer.Close(nil) {
-		mu.Errors = append(mu.Errors, fmt.Errorf("Failed to close! Check for local changes and stashes..."))
-	}
 	mu.closer.Wait()
 
 	if len(mu.Errors) > 0 {
-		com.Println("\nEncountered error! Cleaning... ")
+		com.Println("\nEncountered error! Cleaning...")
 
 	} else {
 		com.Println("\nFinishing up. Cleaning...")
@@ -288,7 +285,10 @@ func (mu *MU) Perform() {
 		}
 
 		if mu.Options.Action == "deploy" {
-			// Ignore taggin
+			// Ignore tagging, use current
+			if len(itr.File.Version) == 0 {
+				itr.File.Version = lib.GetCurrentTag()
+			}
 			continue
 		}
 
@@ -321,8 +321,6 @@ func (mu *MU) Perform() {
 				com.Outputln(com.NAMEONLY, fileItr.File.GetGoURL())
 			}
 		}
-
-		return
 	}
 
 	// Separator
@@ -331,5 +329,9 @@ func (mu *MU) Perform() {
 	if mu.Options.Action == "list" {
 		// If we're just listing files, we don't need to do anything else :)
 		return
+	}
+
+	if !mu.closer.Close(nil) {
+		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes"))
 	}
 }
