@@ -1,4 +1,4 @@
-module github.com/hatchify/mod-sync
+module github.com/hatchify/mod-utils
 
 go 1.14
 
