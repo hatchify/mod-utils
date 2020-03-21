@@ -338,9 +338,6 @@ func (mu *MU) Perform() {
 				com.Outputln(com.NAMEONLY, fileItr.File.GetGoURL())
 			}
 		}
-
-		// Separator
-		com.Outputln(com.NAMEONLY, "")
 	}
 
 	if !mu.closer.Close(nil) {
