@@ -162,7 +162,7 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 
 // ModUpdate will refresh the current dir to master, reset mod files and push changes if there are any
 func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
-	lib.File.Output("Syncing " + branch + " with origin master...")
+	lib.File.Output("Updating <" + branch + "> with latest origin master...")
 
 	if branch != "master" {
 		if err = lib.File.CheckoutBranch("master"); err != nil {
