@@ -147,7 +147,6 @@ func (mu *MU) Perform() {
 	com.Println("\nFound", len(libs)+1, "file(s) in", mu.Options.TargetDirectories)
 	com.Println("\nScanning", len(libs)+1, "for dependencies...")
 
-	// Clean working directory. Note: User closer.New().Wait() to clean this up after
 	var f com.FileWrapper
 	for i := range libs {
 		f.Path = libs[i]
@@ -226,11 +225,16 @@ func (mu *MU) Perform() {
 			continue
 		}
 
-		switched, created, branchErr := itr.File.CheckoutOrCreateBranch(mu.Options.Branch)
-		if branchErr != nil {
-			itr.File.Error("Failed to checkout " + mu.Options.Branch + " :(")
-		} else if !switched {
-			itr.File.Output("Already on " + mu.Options.Branch)
+		switched := false
+		created := false
+		var branchErr error
+		if len(mu.Options.Branch) > 0 {
+			switched, created, branchErr = itr.File.CheckoutOrCreateBranch(mu.Options.Branch)
+			if branchErr != nil {
+				itr.File.Error("Failed to checkout " + mu.Options.Branch + " :(")
+			} else if !switched {
+				itr.File.Output("Already on " + mu.Options.Branch)
+			}
 		}
 
 		if itr.File.Pull() != nil {
@@ -248,17 +252,6 @@ func (mu *MU) Perform() {
 			if lib.File.Deployed {
 				mu.Stats.DeployedCount++
 				mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.DeployedCount) + ") " + itr.File.Path + "\n"
-			} else {
-				switch mu.Options.Branch {
-				case "master", "develop", "staging", "beta", "prod":
-					// Ignore
-				default:
-					// Delete branch
-					if created {
-						lib.File.CheckoutBranch("master")
-						lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch)
-					}
-				}
 			}
 		}
 
@@ -284,27 +277,38 @@ func (mu *MU) Perform() {
 			mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
 		}
 
+		// Check if created a branch we didn't need
+		if !lib.File.Tagged && !lib.File.Updated && !lib.File.Deployed {
+			switch mu.Options.Branch {
+			case "master", "develop", "staging", "beta", "prod", "":
+				// Ignore protected branches and empty branch
+			default:
+				// Delete branch
+				if created {
+					lib.File.CheckoutBranch("master")
+					lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch)
+				}
+			}
+		}
+
 		if mu.Options.Action == "deploy" {
 			// Ignore tagging, use current
 			if len(itr.File.Version) == 0 {
 				itr.File.Version = lib.GetCurrentTag()
 			}
-			continue
-		}
-
-		if strings.HasSuffix(strings.Trim(itr.File.Path, "/"), "-plugin") {
+		} else if strings.HasSuffix(strings.Trim(itr.File.Path, "/"), "-plugin") {
 			// Ignore tagging
-			continue
+		} else {
+			// Tag if forced or if able to increment
+			if len(mu.Options.Tag) > 0 || lib.ShouldTag() {
+				itr.File.Version = lib.TagLib(mu.Options.Tag)
+				itr.File.Tagged = true
+				mu.Stats.TagCount++
+				mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
+			}
 		}
 
-		// Tag if forced or if able to increment
-		if len(mu.Options.Tag) > 0 || lib.ShouldTag() {
-			itr.File.Version = lib.TagLib(mu.Options.Tag)
-			itr.File.Tagged = true
-			mu.Stats.TagCount++
-			mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
-		}
-
+		// Set tag for next lib if not set
 		if len(itr.File.Version) == 0 {
 			if len(mu.Options.Tag) == 0 {
 				itr.File.Version = lib.GetCurrentTag()
@@ -325,11 +329,6 @@ func (mu *MU) Perform() {
 
 	// Separator
 	com.Println("")
-
-	if mu.Options.Action == "list" {
-		// If we're just listing files, we don't need to do anything else :)
-		return
-	}
 
 	if !mu.closer.Close(nil) {
 		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes"))

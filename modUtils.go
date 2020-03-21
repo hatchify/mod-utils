@@ -72,7 +72,7 @@ func (lib *Library) ModSetDeps() {
 		}
 	}
 
-	lib.AppendToModfile("// *** Separate Local Deps *** \\\\\n")
+	lib.AppendToModfile("// *** Separate Local Deps *** \\\\")
 }
 
 // ModReplaceLocalFor adds replace clause for provided file
@@ -164,12 +164,6 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 	lib.File.Output("Updating <" + branch + "> with latest origin master...")
 
-	if branch != "master" {
-		if err = lib.File.CheckoutBranch("master"); err != nil {
-			lib.File.Output("Checkout master failed :(")
-		}
-	}
-
 	if err = lib.File.Fetch(); err != nil {
 		lib.File.Output("Fetch failed :(")
 	}
@@ -179,11 +173,11 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		return
 	}
 
-	if branch != "master" {
+	if len(branch) > 0 && branch != "master" {
 		if err = lib.File.CheckoutBranch(branch); err != nil {
 			lib.File.Output("Checkout " + branch + " failed :(")
 		}
-		if err = lib.File.Merge("master"); err != nil {
+		if err = lib.File.RunCmd("git", "merge", "origin", "master"); err != nil {
 			lib.File.Output("Merge master into " + branch + " failed :(")
 		}
 	}
