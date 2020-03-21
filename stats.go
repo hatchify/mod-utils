@@ -65,10 +65,9 @@ func (stats ActionStats) Format(action, branch string) (output string) {
 		output += stats.TaggedOutput
 	}
 
-	output += "\n"
-
 	if action == "deploy" {
 		// Print deploy status
+		output += "\n"
 		if stats.DeployedCount == 0 {
 			output += "No local changes to deploy in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"
 			output += ""
@@ -78,6 +77,7 @@ func (stats ActionStats) Format(action, branch string) (output string) {
 		}
 	} else if action == "install" {
 		// Print install status
+		output += "\n"
 		if stats.InstalledCount == 0 {
 			output += "No packages installed in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"
 			output += ""
