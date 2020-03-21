@@ -27,6 +27,10 @@ func (i toString) string() {
 
 // Format returns an formatted output string to print stat report
 func (stats ActionStats) Format(action, branch string) (output string) {
+	if action == "list" {
+		return
+	}
+
 	if action == "pull" {
 		// Print pull status
 		output += "Pulled latest version of " + branch + " in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"

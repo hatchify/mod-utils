@@ -144,8 +144,7 @@ func (mu *MU) Perform() {
 	mu.PopulateLibsFromTargets()
 	libs := mu.AllDirectories
 
-	com.Println("\nFound", len(libs)+1, "file(s) in", mu.Options.TargetDirectories)
-	com.Println("\nScanning", len(libs)+1, "for dependencies...")
+	com.Println("\nFound", len(libs)+1, "file(s). Scanning for dependencies...")
 
 	var f com.FileWrapper
 	for i := range libs {
