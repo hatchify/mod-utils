@@ -338,10 +338,10 @@ func (mu *MU) Perform() {
 				com.Outputln(com.NAMEONLY, fileItr.File.GetGoURL())
 			}
 		}
-	}
 
-	// Separator
-	com.Println("")
+		// Separator
+		com.Outputln(com.NAMEONLY, "")
+	}
 
 	if !mu.closer.Close(nil) {
 		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes"))

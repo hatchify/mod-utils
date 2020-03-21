@@ -168,15 +168,16 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		lib.File.Output("Fetch failed :(")
 	}
 
-	if err = lib.File.Pull(); err != nil {
-		lib.File.Output("Pull failed :(")
-		return
-	}
-
 	if len(branch) > 0 && branch != "master" {
 		if err = lib.File.CheckoutBranch(branch); err != nil {
 			lib.File.Output("Checkout " + branch + " failed :(")
 		}
+
+		if err = lib.File.Pull(); err != nil {
+			lib.File.Output("Pull failed :(")
+			return
+		}
+
 		if err = lib.File.RunCmd("git", "merge", "origin/master"); err != nil {
 			lib.File.Output("Merge master into " + branch + " failed :(")
 		}
