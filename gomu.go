@@ -1,6 +1,7 @@
 package gomu
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +21,8 @@ type MU struct {
 	Stats ActionStats
 
 	Errors []error
+
+	closer *closer.Closer
 }
 
 // Options represents different settings to perform an action
@@ -102,16 +105,25 @@ func cleanupStash(libs sort.StringArray) {
 }
 
 // RunThen runs gomu and then calls closure
-func RunThen(mu *MU, close func(mu *MU)) {
+func RunThen(mu *MU, complete func(mu *MU)) {
+	// Handle closures
+	mu.closer = closer.New()
+
+	// Go do the thing
 	go mu.Perform()
-	mu.Close(closer.New().Wait())
+	// Ensure closure is called
+	mu.Close()
+
+	//  Callback to completion handler
+	complete(mu)
 }
 
 // Close handles cleanup
-func (mu *MU) Close(err error) {
-	if err != nil {
-		mu.Errors = append(mu.Errors, err)
+func (mu *MU) Close() {
+	if mu.closer.Close(nil) {
+		mu.Errors = append(mu.Errors, fmt.Errorf("Failed to close! Check for local changes and stashes..."))
 	}
+	mu.closer.Wait()
 
 	if len(mu.Errors) > 0 {
 		com.Println("\nEncountered error! Cleaning... ")
