@@ -188,11 +188,22 @@ func (mu *MU) Perform() {
 		com.Println("")
 		com.Println("(", index, "/", mu.Stats.DepCount, ")", itr.File.Path)
 
-		itr.File.Output("Checking out " + mu.Options.Branch + "...")
-
 		if mu.Options.Action == "pull" {
+			// Check out branch if provided
+			if len(mu.Options.Branch) > 0 {
+				itr.File.Output("Checking out " + mu.Options.Branch + "...")
+				if itr.File.CheckoutBranch(mu.Options.Branch) != nil {
+					itr.File.Output("Failed to check out branch :(")
+					switch mu.Options.Action {
+					case "deploy", "sync":
+						// Quit. We failed
+					}
+				}
+			}
+
 			// Only git pull.
-			if performPull(mu.Options.Branch, itr) {
+			itr.File.Output("Pulling latest changes...")
+			if itr.File.Pull() == nil {
 				itr.File.Updated = true
 				mu.Stats.UpdateCount++
 				mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + itr.File.Path
@@ -258,10 +269,12 @@ func (mu *MU) Perform() {
 		if mu.Options.Action == "replace-local" {
 			// Append local replacements for all libs in lib.updatedDeps
 			lib.File.Output("Setting local replacements...")
+
 			if lib.ModReplaceLocal() {
 				lib.File.Updated = true
 				mu.Stats.UpdateCount++
 				mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
+
 				lib.File.Output("Local replacements set!")
 			} else {
 				lib.File.Output("Failed to set local deps :(")
