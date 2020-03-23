@@ -304,12 +304,10 @@ func (mu *MU) Perform() {
 		}
 
 		if mu.Options.Action == "deploy" {
-			// Ignore tagging, use current
-			if len(itr.File.Version) == 0 {
-				itr.File.Version = lib.GetCurrentTag()
-			}
+			// Ignore setting tag, use current
 		} else if strings.HasSuffix(strings.Trim(itr.File.Path, "/"), "-plugin") {
-			// Ignore tagging
+			// Ignore tagging entirely
+			continue
 		} else {
 			// Tag if forced or if able to increment
 			if len(mu.Options.Tag) > 0 || lib.ShouldTag() {

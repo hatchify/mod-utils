@@ -87,7 +87,11 @@ func (lib *Library) ModReplaceLocal() (updated bool) {
 		localSuffix += "\nreplace " + fileItr.File.GetGoURL() + " => " + fileItr.File.AbsPath() + "\n"
 	}
 
-	return lib.AppendToModfile(localSuffix)
+	updated = lib.AppendToModfile(localSuffix)
+
+	lib.File.RunCmd("rm", "go.sum")
+	lib.ModTidy()
+	return
 }
 
 // AppendToModfile appends provided string to end of mod file
