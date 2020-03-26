@@ -105,7 +105,7 @@ func cleanupStash(libs sort.StringArray) {
 	for i := range libs {
 		f.Path = libs[i]
 		if f.StashPop() {
-			f.Output("Warning - Has local changes!")
+			f.Output("Warning - Has local changes")
 		}
 	}
 }
