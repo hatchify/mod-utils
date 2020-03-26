@@ -226,6 +226,25 @@ func (mu *MU) Perform() {
 		var lib Library
 		lib.File = itr.File
 
+		if mu.Options.Action == "replace-local" {
+			// Append local replacements for all libs in lib.updatedDeps
+			lib.File.Output("Setting local replacements...")
+
+			// Aggregate updated versions of previously parsed deps
+			lib.ModAddDeps(fileHead)
+
+			if lib.ModReplaceLocal() {
+				lib.File.Updated = true
+				mu.Stats.UpdateCount++
+				mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
+
+				lib.File.Output("Local replacements set!")
+			} else {
+				lib.File.Output("Failed to set local deps :(")
+			}
+			continue
+		}
+
 		if mu.Options.Action == "reset" {
 			lib.File.Output("Reverting mod files to <" + mu.Options.Branch + "> ref...")
 
@@ -244,6 +263,7 @@ func (mu *MU) Perform() {
 			continue
 		}
 
+		// Handle branching
 		switched := false
 		created := false
 		var branchErr error
@@ -273,22 +293,6 @@ func (mu *MU) Perform() {
 				mu.Stats.DeployedCount++
 				mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.DeployedCount) + ") " + itr.File.Path + "\n"
 			}
-		}
-
-		if mu.Options.Action == "replace-local" {
-			// Append local replacements for all libs in lib.updatedDeps
-			lib.File.Output("Setting local replacements...")
-
-			if lib.ModReplaceLocal() {
-				lib.File.Updated = true
-				mu.Stats.UpdateCount++
-				mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
-
-				lib.File.Output("Local replacements set!")
-			} else {
-				lib.File.Output("Failed to set local deps :(")
-			}
-			continue
 		}
 
 		// Update the dep if necessary
