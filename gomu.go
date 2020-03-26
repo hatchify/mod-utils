@@ -104,7 +104,9 @@ func cleanupStash(libs sort.StringArray) {
 	var f com.FileWrapper
 	for i := range libs {
 		f.Path = libs[i]
-		f.StashPop()
+		if f.StashPop() {
+			f.Output("Warning - Has local changes!")
+		}
 	}
 }
 
@@ -246,9 +248,13 @@ func (mu *MU) Perform() {
 		}
 
 		if mu.Options.Action == "reset" {
-			lib.File.Output("Reverting mod files to <" + mu.Options.Branch + "> ref...")
+			if len(mu.Options.Branch) > 0 {
+				lib.File.Output("Reverting mod files to <" + mu.Options.Branch + "> ref...")
+			} else {
+				lib.File.Output("Reverting mod files to last-committed ref...")
+			}
 
-			hasChanges := lib.File.StashPop()
+			lib.File.StashPop()
 
 			// Revert any changes to mod files
 			lib.File.RunCmd("git", "checkout", mu.Options.Branch, "go.mod")
@@ -256,8 +262,8 @@ func (mu *MU) Perform() {
 
 			lib.File.Output("Reverted mod files!")
 
-			if hasChanges {
-				lib.File.Output("Has local changes - check for conflicts!!!")
+			if lib.File.HasChanges() {
+				lib.File.Output("Warning! Has local changes.")
 			}
 
 			continue
