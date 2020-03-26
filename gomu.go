@@ -39,6 +39,8 @@ type Options struct {
 	LogLevel com.LogLevel
 }
 
+var closed = false
+
 // New returns new Mod Utils struct
 func New(options Options) *MU {
 	var mu MU
@@ -96,11 +98,13 @@ func (mu *MU) MergeDependencies() (err error) {
 
 // Then handles cleanup after func
 func cleanupStash(libs sort.StringArray) {
+	closed = true
+
 	// Resume working directory
 	var f com.FileWrapper
 	for i := range libs {
 		f.Path = libs[i]
-		go f.StashPop()
+		f.StashPop()
 	}
 }
 
@@ -175,6 +179,11 @@ func (mu *MU) Perform() {
 	// Perform action on sorted libs
 	index := 0
 	for itr := fileHead; itr != nil; itr = itr.Next {
+		if closed {
+			// Stop execution and clean up
+			return
+		}
+
 		index++
 
 		// If we're just listing files, we don't need to do anything else :)
