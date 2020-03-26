@@ -7,5 +7,3 @@ require (
 	github.com/hatchify/mod-common v0.4.100
 	github.com/hatchify/mod-sort v0.4.100
 )
-
-// *** Separate Local Deps *** \\
