@@ -100,7 +100,7 @@ func cleanupStash(libs sort.StringArray) {
 	var f com.FileWrapper
 	for i := range libs {
 		f.Path = libs[i]
-		f.StashPop()
+		go f.StashPop()
 	}
 }
 
