@@ -167,14 +167,6 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 // ModUpdate will refresh the current dir to master, reset mod files and push changes if there are any
 func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 	lib.File.Output("Checking deps...")
-	if lib.File.Fetch() != nil {
-		lib.File.Output("Git fetch failed :(")
-	}
-
-	if lib.File.Pull() != nil {
-		lib.File.Output("Git pull failed :(")
-	}
-
 	// Remove go.mod, ignore lib if not found (not a mod tracked lib)
 	if lib.File.RunCmd("rm", "go.mod") != nil {
 		lib.File.Output("No mod file found. Skipping.")

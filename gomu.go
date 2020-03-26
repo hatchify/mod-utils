@@ -256,6 +256,7 @@ func (mu *MU) Perform() {
 			}
 		}
 
+		itr.File.Output("Pulling latest changes...")
 		if itr.File.Pull() != nil {
 			itr.File.Output("Failed to pull " + mu.Options.Branch + " :(")
 		}
