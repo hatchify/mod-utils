@@ -109,8 +109,8 @@ func (mu *MU) Perform() {
 	com.Println("\nFound", len(libs)+1, "file(s). Scanning for dependencies...")
 
 	var f com.FileWrapper
-	for i := range libs {
-		f.Path = libs[i]
+	for _, lib := range libs {
+		f.Path = lib
 		// Hide local changes to prevent interference with searching/syncing
 		f.Stash()
 	}
@@ -123,6 +123,15 @@ func (mu *MU) Perform() {
 	// Sort libs
 	var fileHead *sort.FileNode
 	fileHead, mu.Stats.DepCount = libs.SortedDependingOnAny(mu.Options.FilterDependencies)
+
+	msg := make([]string, mu.Stats.DepCount)
+	count := 0
+	for itr := fileHead; itr != nil; itr = itr.Next {
+		msg[count] = strconv.Itoa(count+1) + ") " + itr.File.GetGoURL()
+		count++
+	}
+	com.Println(strings.Join(msg, "\n"))
+
 	if len(mu.Options.FilterDependencies) == 0 || len(mu.Options.FilterDependencies) == 0 {
 		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s)")
 	} else {
@@ -131,8 +140,14 @@ func (mu *MU) Perform() {
 
 	switch mu.Options.Action {
 	case "sync":
-		msg := []string{"This action will:\n  1) update mod files"}
-		count := 1
+		msg := []string{"This action will:"}
+		count := 0
+		if mu.Options.Branch != "" {
+			count++
+			msg = append(msg, strconv.Itoa(count)+") checkout (or create) branch "+mu.Options.Branch)
+		}
+		count++
+		msg = append(msg, strconv.Itoa(count)+") update mod files")
 		if mu.Options.Commit {
 			count++
 			msg = append(msg, strconv.Itoa(count)+") commit local changes (if any)")
