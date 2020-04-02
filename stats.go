@@ -4,6 +4,7 @@ import "strconv"
 
 // ActionStats contain stats related to the current action
 type ActionStats struct {
+	Options  *Options
 	DepCount int
 
 	UpdateCount   int
@@ -26,19 +27,24 @@ func (i toString) string() {
 }
 
 // Format returns an formatted output string to print stat report
-func (stats ActionStats) Format(action, branch string) (output string) {
-	if action == "list" {
+func (stats ActionStats) Format() (output string) {
+	if stats.Options.Action == "list" {
 		return
 	}
 
-	if action == "pull" {
+	branch := stats.Options.Branch
+	if len(branch) == 0 {
+		branch = "Current Branch"
+	}
+
+	if stats.Options.Action == "pull" {
 		// Print pull status
-		output += "Pulled latest version of " + branch + " in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+		output += "Pulled latest version of <" + branch + "> in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
 		return
 	}
 
-	if action == "replace-local" {
+	if stats.Options.Action == "replace" {
 		// Print replacement status
 		output += "Replaced local dependencies in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
@@ -50,7 +56,7 @@ func (stats ActionStats) Format(action, branch string) (output string) {
 		output += "All " + strconv.Itoa(stats.DepCount) + " lib dependencies already up to date!"
 		output += ""
 	} else {
-		output += "Updated mod files in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+		output += "Updated mod files in <" + branch + "> for " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
 	}
 
@@ -61,29 +67,19 @@ func (stats ActionStats) Format(action, branch string) (output string) {
 		output += "All " + strconv.Itoa(stats.DepCount) + " lib tags already up to date!"
 		output += ""
 	} else {
-		output += "Updated tag in " + strconv.Itoa(stats.TagCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+		output += "Updated tag for " + strconv.Itoa(stats.TagCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.TaggedOutput
 	}
 
-	if action == "deploy" {
+	if stats.Options.Commit {
 		// Print deploy status
 		output += "\n"
 		if stats.DeployedCount == 0 {
-			output += "No local changes to deploy in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"
+			output += "No local changes to commit in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"
 			output += ""
 		} else {
-			output += "Deployed new changes to <" + branch + "> in " + strconv.Itoa(stats.DeployedCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+			output += "Committed new changes to <" + branch + "> in " + strconv.Itoa(stats.DeployedCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 			output += stats.DeployedOutput
-		}
-	} else if action == "install" {
-		// Print install status
-		output += "\n"
-		if stats.InstalledCount == 0 {
-			output += "No packages installed in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"
-			output += ""
-		} else {
-			output += "Installed " + strconv.Itoa(stats.InstalledCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
-			output += stats.InstalledOutput
 		}
 	}
 

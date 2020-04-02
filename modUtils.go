@@ -173,17 +173,17 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		return
 	}
 
+	// Reset mod files, or initialize if needed
+	lib.File.RunCmd("git", "checkout", "go.mod")
+	lib.ModInit()
+
 	// Remove go sum to prevent mess from adding up
 	if lib.File.RunCmd("rm", "go.sum") != nil {
 		// No dependencies found. If this is unexpected for a given lib, something is out of sync
 		lib.File.Output("No sum file found. No dependencies sorted.")
 	}
 
-	if err = lib.ModInit(); err != nil {
-		lib.File.Output("Mod init failed :(")
-		return
-	}
-
+	// Set versions from previous libs in chain
 	lib.ModSetDeps()
 
 	if err = lib.ModTidy(); err != nil {
@@ -194,6 +194,10 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 	if err = lib.File.Add("go.*"); err != nil {
 		lib.File.Output("Git add failed :(")
 		return
+	}
+
+	if len(commitMessage) == 0 {
+		commitMessage = "Update Mod Files"
 	}
 
 	message := "gomu: " + commitMessage + "\n"

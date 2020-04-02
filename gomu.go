@@ -28,10 +28,13 @@ type MU struct {
 // Options represents different settings to perform an action
 type Options struct {
 	Action string
-	Args   []string
 
-	Branch string
-	Tag    string
+	Branch        string
+	CommitMessage string
+
+	Tag         bool
+	Commit      bool
+	PullRequest bool
 
 	TargetDirectories  sort.StringArray
 	FilterDependencies sort.StringArray
@@ -44,56 +47,9 @@ var closed = false
 // New returns new Mod Utils struct
 func New(options Options) *MU {
 	var mu MU
+	mu.Stats.Options = &options
 	mu.Options = options
 	return &mu
-}
-
-// ListDependencies will print sorted deps
-func (mu *MU) ListDependencies() (err error) {
-
-	return
-}
-
-// ReplaceLocalModules will append local replacements through dep chain
-func (mu *MU) ReplaceLocalModules() (err error) {
-
-	return
-}
-
-// ResetModFiles will revert back to the committed version
-func (mu *MU) ResetModFiles() (err error) {
-
-	return
-}
-
-// PullDependencies will checkout and pull all deps in chain, error if branch does not exist
-func (mu *MU) PullDependencies() (err error) {
-
-	return
-}
-
-// SyncModules will update mod files through the dep chain
-func (mu *MU) SyncModules() (err error) {
-
-	return
-}
-
-// BranchDependencies will git checkout all deps in chain, create branch if it does not exist
-func (mu *MU) BranchDependencies() (err error) {
-
-	return
-}
-
-// DeployChanges will push local changes through the dep chain
-func (mu *MU) DeployChanges() (err error) {
-
-	return
-}
-
-// MergeDependencies will merge current branch to target branch through the dep chain
-func (mu *MU) MergeDependencies() (err error) {
-
-	return
 }
 
 // Then handles cleanup after func
@@ -120,7 +76,7 @@ func RunThen(mu *MU, complete func(mu *MU)) {
 	// Ensure closure is called
 	mu.Close()
 
-	//  Callback to completion handler
+	// Callback to completion handler
 	complete(mu)
 }
 
@@ -159,17 +115,31 @@ func (mu *MU) Perform() {
 		f.Stash()
 	}
 
+	branch := mu.Options.Branch
+	if len(branch) == 0 {
+		branch = "Current Branch"
+	}
+
 	// Sort libs
 	var fileHead *sort.FileNode
 	fileHead, mu.Stats.DepCount = libs.SortedDependingOnAny(mu.Options.FilterDependencies)
 	if len(mu.Options.FilterDependencies) == 0 || len(mu.Options.FilterDependencies) == 0 {
-		com.Println("\nPerforming", mu.Options.Action, "on", mu.Stats.DepCount, "lib(s)")
+		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s)")
 	} else {
-		com.Println("\nPerforming", mu.Options.Action, "on", mu.Stats.DepCount, "lib(s) depending on", mu.Options.FilterDependencies)
+		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s) depending on", mu.Options.FilterDependencies)
 	}
 
 	switch mu.Options.Action {
-	case "sync", "deploy":
+	case "sync":
+		msg := []string{"This will update mod files"}
+		if mu.Options.Commit {
+			msg = append(msg, "&& commit local changes (if any)")
+		}
+		if mu.Options.Tag {
+			msg = append(msg, "&& tag new versions (if updated)")
+		}
+		com.Println("\n" + strings.Join(msg, ", "))
+
 		if !ShowWarning("\nIs this ok?") {
 			cleanupStash(libs)
 			os.Exit(-1)
@@ -228,7 +198,7 @@ func (mu *MU) Perform() {
 		var lib Library
 		lib.File = itr.File
 
-		if mu.Options.Action == "replace-local" {
+		if mu.Options.Action == "replace" {
 			// Append local replacements for all libs in lib.updatedDeps
 			lib.File.Output("Setting local replacements...")
 
@@ -290,10 +260,10 @@ func (mu *MU) Perform() {
 		// Aggregate updated versions of previously parsed deps
 		lib.ModAddDeps(fileHead)
 
-		if mu.Options.Action == "deploy" {
+		if mu.Options.Commit {
 			// TODO: Branch and PR? Diff?
 			lib.File.Output("Checking for local changes...")
-			lib.File.Deployed = lib.ModDeploy(mu.Options.Tag)
+			lib.File.Deployed = lib.ModDeploy("")
 
 			if lib.File.Deployed {
 				mu.Stats.DeployedCount++
@@ -302,7 +272,7 @@ func (mu *MU) Perform() {
 		}
 
 		// Update the dep if necessary
-		if err := lib.ModUpdate(mu.Options.Branch, "Update mod files. "+mu.Options.Tag); err == nil {
+		if err := lib.ModUpdate(mu.Options.Branch, mu.Options.CommitMessage); err == nil {
 			// Dep was updated
 			lib.File.Updated = true
 			mu.Stats.UpdateCount++
@@ -323,15 +293,14 @@ func (mu *MU) Perform() {
 			}
 		}
 
-		if mu.Options.Action == "deploy" {
-			// Ignore setting tag, use current
-		} else if strings.HasSuffix(strings.Trim(itr.File.Path, "/"), "-plugin") {
+		if !mu.Options.Tag || strings.HasSuffix(strings.Trim(itr.File.Path, "/"), "-plugin") {
 			// Ignore tagging entirely
 			continue
 		} else {
 			// Tag if forced or if able to increment
-			if len(mu.Options.Tag) > 0 || lib.ShouldTag() {
-				itr.File.Version = lib.TagLib(mu.Options.Tag)
+			if mu.Options.Tag && lib.ShouldTag() {
+				// TODO: Support explicit versions?
+				itr.File.Version = lib.TagLib("")
 				itr.File.Tagged = true
 				mu.Stats.TagCount++
 				mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
@@ -340,11 +309,7 @@ func (mu *MU) Perform() {
 
 		// Set tag for next lib if not set
 		if len(itr.File.Version) == 0 {
-			if len(mu.Options.Tag) == 0 {
-				itr.File.Version = lib.GetCurrentTag()
-			} else {
-				itr.File.Version = mu.Options.Tag
-			}
+			itr.File.Version = lib.GetCurrentTag()
 		}
 	}
 
