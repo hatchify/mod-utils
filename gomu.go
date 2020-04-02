@@ -123,7 +123,11 @@ func (mu *MU) Perform() {
 	// Sort libs
 	var fileHead *sort.FileNode
 	fileHead, mu.Stats.DepCount = libs.SortedDependingOnAny(mu.Options.FilterDependencies)
-
+	if len(mu.Options.FilterDependencies) == 0 || len(mu.Options.FilterDependencies) == 0 {
+		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s)")
+	} else {
+		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s) depending on", mu.Options.FilterDependencies)
+	}
 	msg := make([]string, mu.Stats.DepCount)
 	count := 0
 	for itr := fileHead; itr != nil; itr = itr.Next {
@@ -132,33 +136,21 @@ func (mu *MU) Perform() {
 	}
 	com.Println(strings.Join(msg, "\n"))
 
-	if len(mu.Options.FilterDependencies) == 0 || len(mu.Options.FilterDependencies) == 0 {
-		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s)")
-	} else {
-		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s) depending on", mu.Options.FilterDependencies)
-	}
-
 	switch mu.Options.Action {
 	case "sync":
-		msg := []string{"This action will:"}
-		count := 0
+		msg := []string{"Sync action will:"}
 		if mu.Options.Branch != "" {
-			count++
-			msg = append(msg, strconv.Itoa(count)+") checkout (or create) branch "+mu.Options.Branch)
+			msg = append(msg, "- checkout (or create) branch "+mu.Options.Branch)
 		}
-		count++
-		msg = append(msg, strconv.Itoa(count)+") update mod files")
+		msg = append(msg, "- update mod files")
 		if mu.Options.Commit {
-			count++
-			msg = append(msg, strconv.Itoa(count)+") commit local changes (if any)")
+			msg = append(msg, "- commit local changes (if any)")
 		}
 		if mu.Options.PullRequest {
-			count++
-			msg = append(msg, strconv.Itoa(count)+") open pull request for changes (if any)")
+			msg = append(msg, "- open pull request for changes (if any)")
 		}
 		if mu.Options.Tag {
-			count++
-			msg = append(msg, strconv.Itoa(count)+") tag new versions (if updated)")
+			msg = append(msg, "- tag new versions (if updated)")
 		}
 		com.Println("\n" + strings.Join(msg, "\n  "))
 
