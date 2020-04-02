@@ -131,14 +131,21 @@ func (mu *MU) Perform() {
 
 	switch mu.Options.Action {
 	case "sync":
-		msg := []string{"This will update mod files"}
+		msg := []string{"This action will:\n  1) update mod files"}
+		count := 1
 		if mu.Options.Commit {
-			msg = append(msg, "&& commit local changes (if any)")
+			count++
+			msg = append(msg, strconv.Itoa(count)+") commit local changes (if any)")
+		}
+		if mu.Options.PullRequest {
+			count++
+			msg = append(msg, strconv.Itoa(count)+") open pull request for changes (if any)")
 		}
 		if mu.Options.Tag {
-			msg = append(msg, "&& tag new versions (if updated)")
+			count++
+			msg = append(msg, strconv.Itoa(count)+") tag new versions (if updated)")
 		}
-		com.Println("\n" + strings.Join(msg, ", "))
+		com.Println("\n" + strings.Join(msg, "\n  "))
 
 		if !ShowWarning("\nIs this ok?") {
 			cleanupStash(libs)
