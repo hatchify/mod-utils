@@ -196,22 +196,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		return
 	}
 
-	if len(commitMessage) == 0 {
-		commitMessage = "Update Mod Files"
-	}
-
-	message := "gomu: " + commitMessage + "\n"
-	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
-		url := itr.File.GetGoURL()
-
-		if itr.File.Updated {
-			message += "\nUpdated " + url + "@" + itr.File.Version
-		} else {
-			message += "\nSet " + url + "@" + itr.File.Version
-		}
-	}
-
-	if err = lib.File.Commit(message); err == nil {
+	if err = lib.File.Commit(commitMessage); err == nil {
 		lib.File.Output("Updating mod files...")
 	} else {
 		lib.File.Output("Deps up to date!")

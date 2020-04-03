@@ -72,16 +72,16 @@ func RunThen(mu *MU, complete func(mu *MU)) {
 	mu.closer = closer.New()
 
 	// Go do the thing
-	go mu.Perform()
+	go mu.PerformThenClose()
 	// Ensure closure is called
-	mu.Close()
+	mu.WaitThenClean()
 
 	// Callback to completion handler
 	complete(mu)
 }
 
-// Close handles cleanup
-func (mu *MU) Close() {
+// WaitThenClean handles cleanup
+func (mu *MU) WaitThenClean() {
 	mu.closer.Wait()
 
 	if len(mu.Errors) > 0 {
@@ -94,8 +94,16 @@ func (mu *MU) Close() {
 	cleanupStash(mu.AllDirectories)
 }
 
-// Perform executes whatever action is set in mu.Options
-func (mu *MU) Perform() {
+// PerformThenClose executes whatever action is set in mu.Options
+func (mu *MU) PerformThenClose() {
+	mu.perform()
+
+	if !mu.closer.Close(nil) {
+		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes in %v", mu.Options.TargetDirectories))
+	}
+}
+
+func (mu *MU) perform() {
 	if len(mu.Options.TargetDirectories) > 0 {
 		com.Println("\nSearching", mu.Options.TargetDirectories, "for git repositories...")
 	} else {
@@ -117,42 +125,45 @@ func (mu *MU) Perform() {
 
 	branch := mu.Options.Branch
 	if len(branch) == 0 {
-		branch = "Current Branch"
+		branch = "\"current\""
+	} else {
+		branch = "<" + branch + ">"
 	}
 
 	// Sort libs
 	var fileHead *sort.FileNode
 	fileHead, mu.Stats.DepCount = libs.SortedDependingOnAny(mu.Options.FilterDependencies)
 	if len(mu.Options.FilterDependencies) == 0 || len(mu.Options.FilterDependencies) == 0 {
-		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s)")
+		com.Println("\nPerforming", mu.Options.Action, "on "+branch+" branch for", mu.Stats.DepCount, "lib(s)")
 	} else {
-		com.Println("\nPerforming", mu.Options.Action, "on branch <"+branch+"> for", mu.Stats.DepCount, "lib(s) depending on", mu.Options.FilterDependencies)
+		com.Println("\nPerforming", mu.Options.Action, "on "+branch+" branch for", mu.Stats.DepCount, "lib(s) depending on", mu.Options.FilterDependencies)
 	}
-	msg := make([]string, mu.Stats.DepCount)
-	count := 0
-	for itr := fileHead; itr != nil; itr = itr.Next {
-		msg[count] = strconv.Itoa(count+1) + ") " + itr.File.GetGoURL()
-		count++
-	}
-	com.Println(strings.Join(msg, "\n"))
 
 	switch mu.Options.Action {
 	case "sync":
-		msg := []string{"Sync action will:"}
-		if mu.Options.Branch != "" {
-			msg = append(msg, "- checkout (or create) branch "+mu.Options.Branch)
+		warningLibs := make([]string, mu.Stats.DepCount)
+		count := 0
+		for itr := fileHead; itr != nil; itr = itr.Next {
+			warningLibs[count] = strconv.Itoa(count+1) + ") " + itr.File.GetGoURL()
+			count++
 		}
-		msg = append(msg, "- update mod files")
+		com.Println(strings.Join(warningLibs, "\n"))
+
+		warningActions := []string{"Sync action will:"}
+		if mu.Options.Branch != "" {
+			warningActions = append(warningActions, "- checkout (or create) branch "+mu.Options.Branch)
+		}
+		warningActions = append(warningActions, "- update mod files")
 		if mu.Options.Commit {
-			msg = append(msg, "- commit local changes (if any)")
+			warningActions = append(warningActions, "- commit local changes (if any)")
 		}
 		if mu.Options.PullRequest {
-			msg = append(msg, "- open pull request for changes (if any)")
+			warningActions = append(warningActions, "- open pull request for changes (if any)")
 		}
 		if mu.Options.Tag {
-			msg = append(msg, "- tag new versions (if updated)")
+			warningActions = append(warningActions, "- tag new versions (if updated)")
 		}
-		com.Println("\n" + strings.Join(msg, "\n  "))
+		com.Println("\n" + strings.Join(warningActions, "\n  "))
 
 		if !ShowWarning("\nIs this ok?") {
 			cleanupStash(libs)
@@ -172,9 +183,9 @@ func (mu *MU) Perform() {
 
 		index++
 
-		// If we're just listing files, we don't need to do anything else :)
 		if mu.Options.Action == "list" {
-			com.Println(strconv.Itoa(index) + ") " + itr.File.GetGoURL())
+			// If we're just listing, print 'n go ;)
+			com.Println("(", index, "/", mu.Stats.DepCount, ")", itr.File.Path)
 			continue
 		}
 
@@ -266,6 +277,11 @@ func (mu *MU) Perform() {
 			}
 		}
 
+		if closed {
+			// Stop execution and clean up
+			return
+		}
+
 		itr.File.Output("Pulling latest changes...")
 		if itr.File.Pull() != nil {
 			itr.File.Output("Failed to pull " + mu.Options.Branch + " :(")
@@ -285,12 +301,39 @@ func (mu *MU) Perform() {
 			}
 		}
 
+		if closed {
+			// Stop execution and clean up
+			return
+		}
+
+		commitTitle := mu.Options.CommitMessage
+		if len(commitTitle) == 0 {
+			commitTitle = "Update Mod Files"
+		}
+
+		commitTitle = "gomu: " + commitTitle
+		commitMessage := ""
+		for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
+			url := itr.File.GetGoURL()
+
+			if itr.File.Updated {
+				commitMessage += "\nUpdated " + url + "@" + itr.File.Version
+			} else {
+				commitMessage += "\nSet " + url + "@" + itr.File.Version
+			}
+		}
+
 		// Update the dep if necessary
-		if err := lib.ModUpdate(mu.Options.Branch, mu.Options.CommitMessage); err == nil {
+		if err := lib.ModUpdate(mu.Options.Branch, commitTitle+"\n"+commitMessage); err == nil {
 			// Dep was updated
 			lib.File.Updated = true
 			mu.Stats.UpdateCount++
 			mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
+		}
+
+		if closed {
+			// Stop execution and clean up
+			return
 		}
 
 		// Check if created a branch we didn't need
@@ -305,6 +348,23 @@ func (mu *MU) Perform() {
 					lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch)
 				}
 			}
+		} else if mu.Options.PullRequest {
+			// Create PR
+			lib.File.Output("Creating Pull Request...")
+			if resp, err := lib.File.PullRequest(commitTitle, commitMessage, mu.Options.Branch, "master"); err == nil {
+				f.PROpened = true
+				mu.Stats.PRCount++
+				mu.Stats.PROutput += resp.URL + "\n"
+
+				lib.File.Output("PR Created!")
+			} else {
+				lib.File.Output("Failed to create PR :(")
+			}
+		}
+
+		if closed {
+			// Stop execution and clean up
+			return
 		}
 
 		if !mu.Options.Tag || strings.HasSuffix(strings.Trim(itr.File.Path, "/"), "-plugin") {
@@ -330,13 +390,9 @@ func (mu *MU) Perform() {
 	if com.GetLogLevel() == com.NAMEONLY {
 		// Print names and quit
 		for fileItr := fileHead; fileItr != nil; fileItr = fileItr.Next {
-			if fileItr.File.Tagged || fileItr.File.Deployed || fileItr.File.Updated || fileItr.File.Installed || mu.Options.Action == "list" {
+			if fileItr.File.Tagged || fileItr.File.Deployed || fileItr.File.Updated || fileItr.File.PROpened || mu.Options.Action == "list" {
 				com.Outputln(com.NAMEONLY, fileItr.File.GetGoURL())
 			}
 		}
-	}
-
-	if !mu.closer.Close(nil) {
-		mu.Errors = append(mu.Errors, fmt.Errorf("failed to close! Check for local changes and stashes in %v", mu.Options.TargetDirectories))
 	}
 }
