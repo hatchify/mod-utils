@@ -1,4 +1,4 @@
-package sync
+package gomu
 
 import (
 	"os"
@@ -56,23 +56,23 @@ func (lib *Library) ModSetDeps() {
 	// Iterate through dep chain
 	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
 		if len(itr.File.Version) == 0 {
-			lib.File.Output("Error: no version to set for " + itr.File.Path)
+			tempLib := Library{}
+			tempLib.File = itr.File
+			itr.File.Version = tempLib.GetCurrentTag()
 
-		} else {
-			url := itr.File.GetGoURL()
+		}
 
-			// Get dep @ version (-d avoids building)
-			if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
-				if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
-					lib.File.Output("Updated " + url + " @ " + itr.File.Version)
-				}
-			} else {
-				lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
+		url := itr.File.GetGoURL()
+
+		// Get dep @ version (-d avoids building)
+		if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
+			if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
+				lib.File.Output("Updated " + url + " @ " + itr.File.Version)
 			}
+		} else {
+			lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
 		}
 	}
-
-	lib.AppendToModfile("// *** Separate Local Deps *** \\\\\n")
 }
 
 // ModReplaceLocalFor adds replace clause for provided file
@@ -84,10 +84,16 @@ func (lib *Library) ModReplaceLocalFor(file sort.FileNode) (updated bool) {
 func (lib *Library) ModReplaceLocal() (updated bool) {
 	localSuffix := ""
 	for fileItr := lib.updatedDeps; fileItr != nil; fileItr = fileItr.Next {
-		localSuffix += "\nreplace " + fileItr.File.GetGoURL() + " => " + fileItr.File.AbsPath() + "\n"
+		localSuffix += "replace " + fileItr.File.GetGoURL() + " => " + fileItr.File.AbsPath() + "\n"
 	}
 
-	return lib.AppendToModfile(localSuffix)
+	if len(localSuffix) > 0 {
+		updated = lib.AppendToModfile("\n\n// Replace Local Deps\n\n" + localSuffix)
+
+		lib.File.RunCmd("rm", "go.sum")
+		lib.ModTidy()
+	}
+	return
 }
 
 // AppendToModfile appends provided string to end of mod file
@@ -99,13 +105,13 @@ func (lib *Library) AppendToModfile(text string) bool {
 		lib.File.Output("Unable to open mod file: " + path.Join(lib.File.AbsPath(), "go.mod"))
 		return false
 	}
-	defer f.Close()
 
 	// Append message
 	if _, err := f.WriteString(text + "\n"); err != nil {
 		lib.File.Output("Unable to write to mod file")
 		return false
 	}
+	f.Close()
 
 	lib.File.Debug("Appended " + text + " to mod file")
 
@@ -162,39 +168,16 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 
 // ModUpdate will refresh the current dir to master, reset mod files and push changes if there are any
 func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
-	lib.File.Output("Syncing " + branch + " with origin master...")
-
-	if branch != "master" {
-		if err = lib.File.CheckoutBranch("master"); err != nil {
-			lib.File.Output("Checkout master failed :(")
-		}
-	}
-
-	if err = lib.File.Fetch(); err != nil {
-		lib.File.Output("Fetch failed :(")
-	}
-
-	if err = lib.File.Pull(); err != nil {
-		lib.File.Output("Pull failed :(")
-		return
-	}
-
-	if branch != "master" {
-		if err = lib.File.CheckoutBranch(branch); err != nil {
-			lib.File.Output("Checkout " + branch + " failed :(")
-		}
-		if err = lib.File.Merge("master"); err != nil {
-			lib.File.Output("Merge master into " + branch + " failed :(")
-		}
-	}
-
 	lib.File.Output("Checking deps...")
-
 	// Remove go.mod, ignore lib if not found (not a mod tracked lib)
 	if lib.File.RunCmd("rm", "go.mod") != nil {
 		lib.File.Output("No mod file found. Skipping.")
 		return
 	}
+
+	// Reset mod files, or initialize if needed
+	lib.File.RunCmd("git", "checkout", "go.mod")
+	lib.ModInit()
 
 	// Remove go sum to prevent mess from adding up
 	if lib.File.RunCmd("rm", "go.sum") != nil {
@@ -202,11 +185,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		lib.File.Output("No sum file found. No dependencies sorted.")
 	}
 
-	if err = lib.ModInit(); err != nil {
-		lib.File.Output("Mod init failed :(")
-		return
-	}
-
+	// Set versions from previous libs in chain
 	lib.ModSetDeps()
 
 	if err = lib.ModTidy(); err != nil {
@@ -219,18 +198,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 		return
 	}
 
-	message := "gomu: " + commitMessage + "\n"
-	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
-		url := itr.File.GetGoURL()
-
-		if itr.File.Updated {
-			message += "\nUpdated " + url + "@" + itr.File.Version
-		} else {
-			message += "\nSet " + url + "@" + itr.File.Version
-		}
-	}
-
-	if err = lib.File.Commit(message); err == nil {
+	if err = lib.File.Commit(commitMessage); err == nil {
 		lib.File.Output("Updating mod files...")
 	} else {
 		lib.File.Output("Deps up to date!")

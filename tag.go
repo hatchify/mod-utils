@@ -1,4 +1,4 @@
-package sync
+package gomu
 
 import (
 	"strings"
@@ -46,6 +46,8 @@ func (lib *Library) ShouldTag() (shouldTag bool) {
 		lib.File.Output("Not tagging plugins. Skipping tag.")
 		return
 	}
+
+	lib.File.RunCmd("git", "pull", "--tag")
 
 	// Check if tag is up to date
 	stdout, err := lib.File.CmdOutput("git-tagger", "--action=get")
