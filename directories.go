@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	sort "github.com/hatchify/mod-sort"
+	"github.com/hatchify/mod-utils/sort"
 )
 
 // PopulateLibsFromTargets will aggregate all libs within all target dirs

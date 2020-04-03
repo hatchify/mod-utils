@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	sort "github.com/hatchify/mod-sort"
+	"github.com/hatchify/mod-utils/sort"
 )
 
 // CleanModCache calls go clean --modcache from calling directory. No context necessary

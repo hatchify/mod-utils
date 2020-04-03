@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	com "github.com/hatchify/mod-common"
+	"github.com/hatchify/mod-utils/com"
 )
 
 // ExitWithErrorMessage prints message and exits

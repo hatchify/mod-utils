@@ -1,13 +1,13 @@
 package gomu
 
 import (
-	common "github.com/hatchify/mod-common"
-	sort "github.com/hatchify/mod-sort"
+	"github.com/hatchify/mod-utils/com"
+	"github.com/hatchify/mod-utils/sort"
 )
 
 // Library represents a file and its updated deps
 type Library struct {
-	File *common.FileWrapper
+	File *com.FileWrapper
 
 	updatedDeps *sort.FileNode
 }

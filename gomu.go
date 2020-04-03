@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/hatchify/closer"
-	com "github.com/hatchify/mod-common"
-	sort "github.com/hatchify/mod-sort"
+	"github.com/hatchify/mod-utils/com"
+	"github.com/hatchify/mod-utils/sort"
 )
 
 // MU represents a Mod Utils instance which sets options from flags and allows actions to be called
