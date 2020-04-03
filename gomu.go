@@ -32,9 +32,10 @@ type Options struct {
 	Branch        string
 	CommitMessage string
 
-	Tag         bool
 	Commit      bool
 	PullRequest bool
+	Tag         bool
+	SetVersion  string
 
 	TargetDirectories  sort.StringArray
 	FilterDependencies sort.StringArray
@@ -391,7 +392,7 @@ func (mu *MU) perform() {
 			// Tag if forced or if able to increment
 			if mu.Options.Tag && lib.ShouldTag() {
 				// TODO: Support explicit versions?
-				itr.File.Version = lib.TagLib("")
+				itr.File.Version = lib.TagLib(mu.Options.SetVersion)
 				itr.File.Tagged = true
 				mu.Stats.TagCount++
 				mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
