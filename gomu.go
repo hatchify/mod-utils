@@ -104,6 +104,21 @@ func (mu *MU) PerformThenClose() {
 }
 
 func (mu *MU) perform() {
+	if mu.Options.PullRequest {
+		authObject, err := com.LoadAuth()
+		if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
+			com.Println("")
+			com.Println("gomu :: I needs credentials for Pull Requests...")
+			if authObject.Setup() != nil {
+				com.Println("Error saving :(")
+				err = fmt.Errorf("Unable to parse github username and token")
+				return
+			}
+			err = nil
+			com.Println("Saved Credentials!")
+		}
+	}
+
 	if len(mu.Options.TargetDirectories) > 0 {
 		com.Println("\nSearching", mu.Options.TargetDirectories, "for git repositories...")
 	} else {
