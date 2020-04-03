@@ -351,21 +351,9 @@ func (mu *MU) perform() {
 			return
 		}
 
-		// Check if created a branch we didn't need
-		if !lib.File.Tagged && !lib.File.Updated && !lib.File.Deployed {
-			switch mu.Options.Branch {
-			case "master", "develop", "staging", "beta", "prod", "":
-				// Ignore protected branches and empty branch
-			default:
-				// Delete branch
-				if created {
-					lib.File.CheckoutBranch("master")
-					lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch)
-				}
-			}
-		} else if mu.Options.PullRequest {
+		if mu.Options.PullRequest {
 			// Create PR
-			lib.File.Output("Creating Pull Request...")
+			lib.File.Output("Attempting Pull Request...")
 			if resp, err := lib.File.PullRequest(commitTitle, commitMessage, mu.Options.Branch, "master"); err == nil {
 				f.PROpened = true
 				mu.Stats.PRCount++
@@ -374,6 +362,20 @@ func (mu *MU) perform() {
 				lib.File.Output("PR Created!")
 			} else {
 				lib.File.Output("Failed to create PR :(")
+			}
+		}
+
+		// Check if created a branch we didn't need
+		if created && !lib.File.Tagged && !lib.File.Updated && !lib.File.Deployed && !lib.File.PROpened {
+			switch mu.Options.Branch {
+			case "master", "develop", "staging", "beta", "prod", "":
+				// Ignore protected branches and empty branch
+			default:
+				// Delete branch
+				lib.File.CheckoutBranch("master")
+				lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch)
+				lib.File.Output("Deleted unused branch")
+				continue
 			}
 		}
 
