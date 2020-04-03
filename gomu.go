@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/hatchify/closer"
-	com "github.com/hatchify/mod-common"
-	sort "github.com/hatchify/mod-sort"
+	"github.com/hatchify/mod-utils/com"
+	"github.com/hatchify/mod-utils/sort"
 )
 
 // MU represents a Mod Utils instance which sets options from flags and allows actions to be called
@@ -240,20 +240,26 @@ func (mu *MU) perform() {
 		lib.File = itr.File
 
 		if mu.Options.Action == "replace" {
-			// Append local replacements for all libs in lib.updatedDeps
-			lib.File.Output("Setting local replacements...")
+			lib.File.Output("Checking deps...")
 
 			// Aggregate updated versions of previously parsed deps
 			lib.ModAddDeps(fileHead)
 
-			if lib.ModReplaceLocal() {
-				lib.File.Updated = true
-				mu.Stats.UpdateCount++
-				mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
-
-				lib.File.Output("Local replacements set!")
+			if lib.updatedDeps == nil {
+				lib.File.Output("Skipping: No deps in chain to set.")
 			} else {
-				lib.File.Output("Failed to set local deps :(")
+				lib.File.Output("Setting local replacements...")
+
+				// Append local replacements for all libs in lib.updatedDeps
+				if lib.ModReplaceLocal() {
+					lib.File.Updated = true
+					mu.Stats.UpdateCount++
+					mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
+
+					lib.File.Output("Local replacements set!")
+				} else {
+					lib.File.Output("Failed to set local deps :(")
+				}
 			}
 			continue
 		}

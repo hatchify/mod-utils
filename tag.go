@@ -85,6 +85,8 @@ func (lib *Library) ShouldTag() (shouldTag bool) {
 }
 
 // GetCurrentTag returns the latest tag for a given dir
+// TODO: create GetLatestTag for this functinoality
+// TODO: use git-tagger --action=current to return current tag rather than latest tag
 func (lib *Library) GetCurrentTag() (currentTag string) {
 	output, err := lib.File.CmdOutput("git-tagger", "--action=get")
 	if err != nil {
