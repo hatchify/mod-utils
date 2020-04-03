@@ -56,19 +56,21 @@ func (lib *Library) ModSetDeps() {
 	// Iterate through dep chain
 	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
 		if len(itr.File.Version) == 0 {
-			lib.File.Output("Error: no version to set for " + itr.File.Path)
+			tempLib := Library{}
+			tempLib.File = itr.File
+			itr.File.Version = tempLib.GetCurrentTag()
 
-		} else {
-			url := itr.File.GetGoURL()
+		}
 
-			// Get dep @ version (-d avoids building)
-			if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
-				if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
-					lib.File.Output("Updated " + url + " @ " + itr.File.Version)
-				}
-			} else {
-				lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
+		url := itr.File.GetGoURL()
+
+		// Get dep @ version (-d avoids building)
+		if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
+			if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
+				lib.File.Output("Updated " + url + " @ " + itr.File.Version)
 			}
+		} else {
+			lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
 		}
 	}
 }
@@ -103,13 +105,13 @@ func (lib *Library) AppendToModfile(text string) bool {
 		lib.File.Output("Unable to open mod file: " + path.Join(lib.File.AbsPath(), "go.mod"))
 		return false
 	}
-	defer f.Close()
 
 	// Append message
 	if _, err := f.WriteString(text + "\n"); err != nil {
 		lib.File.Output("Unable to write to mod file")
 		return false
 	}
+	f.Close()
 
 	lib.File.Debug("Appended " + text + " to mod file")
 
