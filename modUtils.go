@@ -77,6 +77,7 @@ func (lib *Library) ModSetDeps() {
 
 // ModReplaceLocalFor adds replace clause for provided file
 func (lib *Library) ModReplaceLocalFor(file sort.FileNode) (updated bool) {
+	lib.File.Output("Replacing " + file.File.GetGoURL() + "...")
 	return lib.AppendToModfile("\nreplace " + file.File.GetGoURL() + " => " + file.File.AbsPath() + "\n")
 }
 
@@ -84,6 +85,7 @@ func (lib *Library) ModReplaceLocalFor(file sort.FileNode) (updated bool) {
 func (lib *Library) ModReplaceLocal() (updated bool) {
 	localSuffix := ""
 	for fileItr := lib.updatedDeps; fileItr != nil; fileItr = fileItr.Next {
+		lib.File.Output("Replacing " + fileItr.File.GetGoURL() + "...")
 		localSuffix += "replace " + fileItr.File.GetGoURL() + " => " + fileItr.File.AbsPath() + "\n"
 	}
 
