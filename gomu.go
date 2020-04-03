@@ -389,8 +389,8 @@ func (mu *MU) perform() {
 			// Ignore tagging entirely
 			continue
 		} else {
-			// Tag if forced or if able to increment
-			if mu.Options.Tag && lib.ShouldTag() {
+			// Tag if forced or if able to incremen
+			if mu.Options.Tag && (len(mu.Options.SetVersion) > 0 || lib.ShouldTag()) {
 				// TODO: Support explicit versions?
 				itr.File.Version = lib.TagLib(mu.Options.SetVersion)
 				itr.File.Tagged = true
