@@ -1,7 +1,6 @@
 package com
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -20,28 +19,28 @@ type FileWrapper struct {
 }
 
 // Debug prints a message to stdout if debug is true
-func (file FileWrapper) Error(message string) {
+func (file *FileWrapper) Error(message string) {
 	Errorln(file.Path, ":ERROR:", message)
 }
 
 // Output prints a message to stdout
-func (file FileWrapper) Output(message string) {
+func (file *FileWrapper) Output(message string) {
 	Println(file.Path, "::", message)
 }
 
 // Debug prints a message to stdout if debug is true
-func (file FileWrapper) Debug(message string) {
+func (file *FileWrapper) Debug(message string) {
 	Debugln(file.Path, ":DEBUG:", message)
 }
 
 // AbsPath returns the current absolute directory of the calling lib
-func (file FileWrapper) AbsPath() string {
+func (file *FileWrapper) AbsPath() string {
 	dir, _ := file.CmdOutput("pwd")
 	return dir
 }
 
 // GetGoURL will return the format of the dependency version <github.com/hatchify/mod-common>
-func (file FileWrapper) GetGoURL() (url string) {
+func (file *FileWrapper) GetGoURL() (url string) {
 	dir := file.AbsPath()
 
 	// Parse go/src out of absolute path
@@ -60,7 +59,7 @@ func (file FileWrapper) GetGoURL() (url string) {
 
 // ImportsDirectly is used to determine direct dependencies.
 // returns true if file/go.mod contains any dep version
-func (file FileWrapper) ImportsDirectly(dep *FileWrapper) bool {
+func (file *FileWrapper) ImportsDirectly(dep *FileWrapper) bool {
 	// Read library/go.mod
 	if libMod, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
 		return strings.Contains(string(libMod), dep.Path+" v")
@@ -71,7 +70,7 @@ func (file FileWrapper) ImportsDirectly(dep *FileWrapper) bool {
 
 // DependsOn is used to determine sort order.
 // returns true if file/go.sum contains any dep version
-func (file FileWrapper) DependsOn(dep *FileWrapper) bool {
+func (file *FileWrapper) DependsOn(dep *FileWrapper) bool {
 	// Read library/go.sum
 	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.sum")); err == nil {
 		return strings.Contains(string(libSum), dep.Path+" v")
@@ -81,7 +80,7 @@ func (file FileWrapper) DependsOn(dep *FileWrapper) bool {
 }
 
 // DependsOnAny returns true if file depends on any of the filter deps. Returns false if slice is empty
-func (file FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
+func (file *FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 	// Read library/go.sum once
 	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.sum")); err == nil {
 		// Parse sum once
@@ -100,11 +99,10 @@ func (file FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 }
 
 // MatchesAny returns true if file matches one of the deps
-func (file FileWrapper) MatchesAny(deps []*FileWrapper) bool {
+func (file *FileWrapper) MatchesAny(deps []*FileWrapper) bool {
 	for i := range deps {
 		if strings.HasSuffix(file.Path, deps[i].Path) {
 			file.Version = deps[i].Version
-			fmt.Println("Version: " + file.Version)
 			return true
 		}
 	}

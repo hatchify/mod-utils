@@ -1,7 +1,6 @@
 package sort
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -24,7 +23,6 @@ func (libs StringArray) SortedDependingOnAny(subDeps StringArray) (listHead *Fil
 			f.Path = subDeps[i]
 		}
 		filters[i] = &f
-		fmt.Println("Version: " + f.Version)
 	}
 
 	// Parse each lib and add if included by a filter or if no filters provided
