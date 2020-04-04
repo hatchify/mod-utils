@@ -124,7 +124,10 @@ func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string
 			lib.File.PROpened = true
 			lib.File.Output("PR Created!")
 		} else {
-			if resp.Errors[0].Message == "No commits between master and "+branch {
+			if len(resp.Errors) == 0 {
+				lib.File.Output("Failed to create PR :(")
+
+			} else if strings.HasPrefix(resp.Errors[0].Message, "No commits between master and") {
 				// Delete remote branch
 				if lib.File.RunCmd("git", "push", "origin", "--delete", branch) == nil {
 					lib.File.Output("No changes in PR. Deleted unused remote branch.")
