@@ -10,6 +10,8 @@ import (
 	"os/user"
 	"path"
 	"strings"
+
+	"github.com/hatchify/simply"
 )
 
 // CheckoutBranch calls git checkout on provided branch in provided dir. Creates new branch if necessary
@@ -207,9 +209,9 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
 		return
 	}
-	resp.Body.Close()
 	payload := &PRResponse{}
 	err = json.Unmarshal(body, payload)
+	resp.Body.Close()
 
 	// Return status
 	payload.HTTPStatus = resp.StatusCode
@@ -217,7 +219,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	if status.HTTPStatus >= 300 {
 		err = fmt.Errorf("Http error %d", status.HTTPStatus)
 		if len(status.Errors) > 0 {
-			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, status.Errors[0].Message))
+			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, simply.Stringify(status)))
 		}
 	}
 
