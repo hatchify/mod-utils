@@ -132,8 +132,6 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 		return
 	}
 
-	file.RunCmd("git", "push", "-u", "origin", branch)
-
 	// Get git host
 	comps := strings.Split(file.GetGoURL(), "/")
 	switch comps[0] {
