@@ -418,7 +418,13 @@ func (mu *MU) perform() {
 		lib.File = itr.File
 
 		if mu.Options.Action == "pull" {
-			mu.pull(lib)
+
+			if len(lib.File.Version) > 0 {
+				lib.File.Output("Already has version set: " + lib.File.Version)
+				lib.File.CheckoutBranch(lib.File.Version)
+			} else {
+				mu.pull(lib)
+			}
 			continue
 		}
 
@@ -429,6 +435,12 @@ func (mu *MU) perform() {
 
 		if mu.Options.Action == "reset" {
 			mu.reset(lib)
+			continue
+		}
+
+		if len(lib.File.Version) > 0 {
+			lib.File.Output("Already has version set: " + lib.File.Version)
+			lib.File.CheckoutBranch(lib.File.Version)
 			continue
 		}
 
