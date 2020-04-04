@@ -1,6 +1,7 @@
 package com
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -103,6 +104,7 @@ func (file FileWrapper) MatchesAny(deps []*FileWrapper) bool {
 	for i := range deps {
 		if strings.HasSuffix(file.Path, deps[i].Path) {
 			file.Version = deps[i].Version
+			fmt.Println("Version: " + file.Version)
 			return true
 		}
 	}

@@ -1,6 +1,7 @@
 package sort
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -23,12 +24,7 @@ func (libs StringArray) SortedDependingOnAny(subDeps StringArray) (listHead *Fil
 			f.Path = subDeps[i]
 		}
 		filters[i] = &f
-	}
-	for i := range filters {
-		var node FileNode
-		var file com.FileWrapper
-		node.File = &file
-		node.File.Path = strings.TrimSpace(libs[i])
+		fmt.Println("Version: " + f.Version)
 	}
 
 	// Parse each lib and add if included by a filter or if no filters provided
