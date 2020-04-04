@@ -127,6 +127,11 @@ func (file *FileWrapper) CurrentBranch() (branch string, err error) {
 
 // PullRequest opens a PR for the specified url on the specified branch
 func (file *FileWrapper) PullRequest(title, message, branch, target string) (status *PRResponse, err error) {
+	if branch == target {
+		err = fmt.Errorf("Cannot create PR from " + branch + " to " + target)
+		return
+	}
+
 	if err = file.RunCmd("git", "push", "-u", "origin", branch); err != nil {
 		file.Error("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
 	}
