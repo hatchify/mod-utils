@@ -59,7 +59,6 @@ func (lib *Library) ModSetDeps() {
 			tempLib := Library{}
 			tempLib.File = itr.File
 			itr.File.Version = tempLib.GetCurrentTag()
-
 		}
 
 		url := itr.File.GetGoURL()
@@ -68,6 +67,8 @@ func (lib *Library) ModSetDeps() {
 		if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
 			if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
 				lib.File.Output("Updated " + url + " @ " + itr.File.Version)
+			} else {
+				lib.File.Output("Set " + url + " @ " + itr.File.Version)
 			}
 		} else {
 			lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
