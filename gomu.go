@@ -115,6 +115,12 @@ func (mu *MU) sync(lib Library, commitTitle, commitMessage string) {
 }
 func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string) (err error) {
 	if mu.Options.PullRequest {
+		if len(branch) == 0 {
+			branch, err = lib.File.CurrentBranch()
+			if err != nil {
+				return
+			}
+		}
 		lib.File.Output("Attempting Pull Request " + branch + " to master...")
 
 		resp, err := lib.File.PullRequest(commitTitle, commitMessage, branch, "master")
@@ -284,7 +290,7 @@ func (mu *MU) pull(lib Library) {
 
 }
 
-func (mu *MU) updateOrCreateBranch(lib Library, branch string) (created bool) {
+func (mu *MU) updateOrCreateBranch(lib Library) (created bool) {
 	switched := false
 	var branchErr error
 	if len(mu.Options.Branch) > 0 {
@@ -297,7 +303,7 @@ func (mu *MU) updateOrCreateBranch(lib Library, branch string) (created bool) {
 			lib.File.Output("Switched to " + mu.Options.Branch)
 		} else {
 			lib.File.Output("Created branch " + mu.Options.Branch + "!")
-			lib.File.RunCmd("git", "push", "-u", "origin", branch)
+			lib.File.RunCmd("git", "push", "-u", "origin", mu.Options.Branch)
 		}
 	}
 
@@ -432,7 +438,7 @@ func (mu *MU) perform() {
 		}
 
 		// Handle branching
-		created := mu.updateOrCreateBranch(lib, branch)
+		created := mu.updateOrCreateBranch(lib)
 
 		// Aggregate updated versions of previously parsed deps
 		lib.ModAddDeps(fileHead)
@@ -453,7 +459,7 @@ func (mu *MU) perform() {
 		}
 
 		// Create PR
-		mu.pullRequest(lib, branch, commitTitle, commitMessage)
+		mu.pullRequest(lib, mu.Options.Branch, commitTitle, commitMessage)
 
 		if closed {
 			// Stop execution and clean up
