@@ -122,7 +122,7 @@ func (lib *Library) AppendToModfile(text string) bool {
 }
 
 // ModDeploy will commit and push local changes to the current branch before switching to master
-func (lib *Library) ModDeploy(tag string) (deployed bool) {
+func (lib *Library) ModDeploy(tag, commitMessage string) (deployed bool) {
 	// Handle saving local changes
 	lib.File.StashPop()
 	lib.File.Add(".")
@@ -147,6 +147,10 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 		}
 	} else {
 		message = "gomu: Deploy local changes before updating version to " + tag
+	}
+
+	if len(commitMessage) > 0 {
+		message = commitMessage + "\n\n" + message
 	}
 
 	if lib.File.Commit(message) == nil {

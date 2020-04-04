@@ -315,7 +315,7 @@ func (mu *MU) perform() {
 		if mu.Options.Commit {
 			// TODO: Branch and PR? Diff?
 			lib.File.Output("Checking for local changes...")
-			lib.File.Deployed = lib.ModDeploy("")
+			lib.File.Deployed = lib.ModDeploy("", mu.Options.CommitMessage)
 
 			if lib.File.Deployed {
 				mu.Stats.DeployedCount++
