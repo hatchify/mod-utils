@@ -24,17 +24,18 @@ func (file *FileWrapper) CheckoutOrCreateBranch(branch string) (switched, create
 		return
 	}
 
+	// Attempt checkout branch
 	if err = file.RunCmd("git", "checkout", branch); err != nil {
-		// Attempt create branch
+		// Attempt to create branch
+		err = nil
+
 		if err = file.RunCmd("git", "checkout", "-b", branch); err == nil {
-			file.Output("Created " + branch + "!")
+			// Success
+			created = true
 			switched = true
-			if err = file.RunCmd("git", "push", "-u", "origin", branch); err == nil {
-				file.Error("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
-				created = true
-			}
 		}
 	} else {
+		// Switch succeeded
 		switched = true
 	}
 
@@ -126,6 +127,10 @@ func (file *FileWrapper) CurrentBranch() (branch string, err error) {
 
 // PullRequest opens a PR for the specified url on the specified branch
 func (file *FileWrapper) PullRequest(title, message, branch, target string) (status *PRResponse, err error) {
+	if err = file.RunCmd("git", "push", "-u", "origin", branch); err != nil {
+		file.Error("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
+	}
+
 	// Get git host
 	comps := strings.Split(file.GetGoURL(), "/")
 	switch comps[0] {
