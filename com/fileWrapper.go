@@ -102,6 +102,7 @@ func (file FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 func (file FileWrapper) MatchesAny(deps []*FileWrapper) bool {
 	for i := range deps {
 		if strings.HasSuffix(file.Path, deps[i].Path) {
+			file.Version = deps[i].Version
 			return true
 		}
 	}
