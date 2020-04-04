@@ -117,7 +117,7 @@ func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string
 	if mu.Options.PullRequest {
 		lib.File.Output("Attempting Pull Request...")
 
-		resp, err := lib.File.PullRequest(commitTitle, commitMessage, mu.Options.Branch, "master")
+		resp, err := lib.File.PullRequest(commitTitle, commitMessage, branch, "master")
 		if err == nil {
 			mu.Stats.PRCount++
 			mu.Stats.PROutput += resp.URL + "\n"
@@ -125,12 +125,14 @@ func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string
 			lib.File.Output("PR Created!")
 		} else {
 			if len(resp.Errors) == 0 {
-				lib.File.Output("Failed to create PR :(")
+				lib.File.Output("Failed to create PR :( " + err.Error())
 
 			} else if strings.HasPrefix(resp.Errors[0].Message, "No commits between master and") {
 				// Delete remote branch
 				if lib.File.RunCmd("git", "push", "origin", "--delete", branch) == nil {
 					lib.File.Output("No changes in PR. Deleted unused remote branch.")
+				} else {
+					lib.File.Output("Failed to delete unused remote branch " + branch)
 				}
 			} else if strings.HasPrefix(resp.Errors[0].Message, "A pull request already exists for") {
 				// PR Exists
