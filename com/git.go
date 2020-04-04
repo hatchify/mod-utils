@@ -133,7 +133,8 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	}
 
 	if err = file.RunCmd("git", "push", "-u", "origin", branch); err != nil {
-		file.Error("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
+		err = fmt.Errorf("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
+		return
 	}
 
 	// Get git host
