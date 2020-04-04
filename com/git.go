@@ -161,7 +161,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 			return
 		}
 	}
-	post := &prRequest{title, message, branch, target}
+	post := &prRequest{title, message, target, branch}
 	data, err := json.Marshal(post)
 	if err != nil {
 		err = fmt.Errorf("Unable to parse pull request params")
