@@ -176,6 +176,7 @@ func (mu *MU) checkCreatedBranchChanges(lib Library) {
 			// Delete branch
 			lib.File.CheckoutBranch("master")
 			if lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch) == nil {
+				lib.File.RunCmd("git", "push", "origin", "--delete", mu.Options.Branch)
 				if !closed {
 					lib.File.Output("Newly created branch did not update. Deleted unused branch")
 				}
@@ -296,6 +297,7 @@ func (mu *MU) updateOrCreateBranch(lib Library, branch string) (created bool) {
 			lib.File.Output("Switched to " + mu.Options.Branch)
 		} else {
 			lib.File.Output("Created branch " + mu.Options.Branch + "!")
+			lib.File.RunCmd("git", "push", "-u", "origin", branch)
 		}
 	}
 
