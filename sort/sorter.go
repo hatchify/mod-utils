@@ -24,12 +24,6 @@ func (libs StringArray) SortedDependingOnAny(subDeps StringArray) (listHead *Fil
 		}
 		filters[i] = &f
 	}
-	for i := range filters {
-		var node FileNode
-		var file com.FileWrapper
-		node.File = &file
-		node.File.Path = strings.TrimSpace(libs[i])
-	}
 
 	// Parse each lib and add if included by a filter or if no filters provided
 	for i := range libs {

@@ -59,7 +59,6 @@ func (lib *Library) ModSetDeps() {
 			tempLib := Library{}
 			tempLib.File = itr.File
 			itr.File.Version = tempLib.GetCurrentTag()
-
 		}
 
 		url := itr.File.GetGoURL()
@@ -68,6 +67,8 @@ func (lib *Library) ModSetDeps() {
 		if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
 			if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
 				lib.File.Output("Updated " + url + " @ " + itr.File.Version)
+			} else {
+				lib.File.Output("Set " + url + " @ " + itr.File.Version)
 			}
 		} else {
 			lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
@@ -122,7 +123,7 @@ func (lib *Library) AppendToModfile(text string) bool {
 }
 
 // ModDeploy will commit and push local changes to the current branch before switching to master
-func (lib *Library) ModDeploy(tag string) (deployed bool) {
+func (lib *Library) ModDeploy(tag, commitMessage string) (deployed bool) {
 	// Handle saving local changes
 	lib.File.StashPop()
 	lib.File.Add(".")
@@ -147,6 +148,10 @@ func (lib *Library) ModDeploy(tag string) (deployed bool) {
 		}
 	} else {
 		message = "gomu: Deploy local changes before updating version to " + tag
+	}
+
+	if len(commitMessage) > 0 {
+		message = commitMessage + "\n\n" + message
 	}
 
 	if lib.File.Commit(message) == nil {

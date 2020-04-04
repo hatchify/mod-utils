@@ -24,17 +24,18 @@ func (file *FileWrapper) CheckoutOrCreateBranch(branch string) (switched, create
 		return
 	}
 
+	// Attempt checkout branch
 	if err = file.RunCmd("git", "checkout", branch); err != nil {
-		// Attempt create branch
+		// Attempt to create branch
+		err = nil
+
 		if err = file.RunCmd("git", "checkout", "-b", branch); err == nil {
-			file.Output("Created " + branch + "!")
+			// Success
+			created = true
 			switched = true
-			if err = file.RunCmd("git", "push", "-u", "origin", branch); err == nil {
-				file.Error("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
-				created = true
-			}
 		}
 	} else {
+		// Switch succeeded
 		switched = true
 	}
 
@@ -126,6 +127,16 @@ func (file *FileWrapper) CurrentBranch() (branch string, err error) {
 
 // PullRequest opens a PR for the specified url on the specified branch
 func (file *FileWrapper) PullRequest(title, message, branch, target string) (status *PRResponse, err error) {
+	if branch == target {
+		err = fmt.Errorf("Cannot create PR from " + branch + " to " + target)
+		return
+	}
+
+	if err = file.RunCmd("git", "push", "-u", "origin", branch); err != nil {
+		err = fmt.Errorf("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
+		return
+	}
+
 	// Get git host
 	comps := strings.Split(file.GetGoURL(), "/")
 	switch comps[0] {
@@ -207,8 +218,10 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	payload.HTTPStatus = resp.StatusCode
 	status = payload
 	if status.HTTPStatus >= 300 {
-		err = fmt.Errorf("Http error %d: %s", status.HTTPStatus, string(body))
-		file.Output(err.Error())
+		err = fmt.Errorf("Http error %d", status.HTTPStatus)
+		if len(status.Errors) > 0 {
+			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, status.Errors[0].Message))
+		}
 	}
 
 	if status.HTTPStatus == 401 {
