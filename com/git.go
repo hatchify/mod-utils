@@ -132,6 +132,10 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 		return
 	}
 
+	if err = file.RunCmd("git", "push", "-u", "origin", branch); err != nil {
+		file.Error("Unable to set upstream for branch " + branch + " :( Check repo permissions?")
+	}
+
 	// Get git host
 	comps := strings.Split(file.GetGoURL(), "/")
 	switch comps[0] {
@@ -161,7 +165,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 			return
 		}
 	}
-	post := &prRequest{title, message, target, branch}
+	post := &prRequest{title, message, branch, target}
 	data, err := json.Marshal(post)
 	if err != nil {
 		err = fmt.Errorf("Unable to parse pull request params")
@@ -205,9 +209,9 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	if body, err = ioutil.ReadAll(resp.Body); err != nil {
 		return
 	}
+	resp.Body.Close()
 	payload := &PRResponse{}
 	err = json.Unmarshal(body, payload)
-	resp.Body.Close()
 
 	// Return status
 	payload.HTTPStatus = resp.StatusCode
@@ -215,7 +219,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	if status.HTTPStatus >= 300 {
 		err = fmt.Errorf("Http error %d", status.HTTPStatus)
 		if len(status.Errors) > 0 {
-			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, string(body)))
+			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, status.Errors[0].Message))
 		}
 	}
 

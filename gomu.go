@@ -345,8 +345,6 @@ func (mu *MU) perform() {
 	branch := mu.Options.Branch
 	if len(branch) == 0 {
 		branch = "\"current\""
-	} else {
-		branch = "<" + branch + ">"
 	}
 
 	// Sort libs
