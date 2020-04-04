@@ -115,7 +115,7 @@ func (mu *MU) sync(lib Library, commitTitle, commitMessage string) {
 }
 func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string) (err error) {
 	if mu.Options.PullRequest {
-		lib.File.Output("Attempting Pull Request...")
+		lib.File.Output("Attempting Pull Request " + branch + " to master...")
 
 		resp, err := lib.File.PullRequest(commitTitle, commitMessage, branch, "master")
 		if err == nil {
