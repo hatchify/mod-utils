@@ -10,8 +10,6 @@ import (
 	"os/user"
 	"path"
 	"strings"
-
-	"github.com/hatchify/simply"
 )
 
 // CheckoutBranch calls git checkout on provided branch in provided dir. Creates new branch if necessary
@@ -219,7 +217,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	if status.HTTPStatus >= 300 {
 		err = fmt.Errorf("Http error %d", status.HTTPStatus)
 		if len(status.Errors) > 0 {
-			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, simply.Stringify(status)))
+			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, string(body)))
 		}
 	}
 
