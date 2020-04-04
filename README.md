@@ -1,2 +1,2 @@
-# Mod sync
-Mod sync helps to keep go mod dependencies in sync
+# Mod Utils #
+Mod utils helps to keep go mod dependencies in sync
