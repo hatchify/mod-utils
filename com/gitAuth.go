@@ -26,6 +26,13 @@ type prRequest struct {
 type PRResponse struct {
 	HTTPStatus int    `json:"httpStatus,omitempty"`
 	URL        string `json:"html_url,omitempty"`
+
+	Errors []PRResponseError `json:"errors,omitempty"`
+}
+
+// PRResponseError returned when PR fails creation
+type PRResponseError struct {
+	Message string `json:"message,omitempty"`
 }
 
 // GitAuthObject represents authentication credentials

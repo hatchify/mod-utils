@@ -207,8 +207,10 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	payload.HTTPStatus = resp.StatusCode
 	status = payload
 	if status.HTTPStatus >= 300 {
-		err = fmt.Errorf("Http error %d: %s", status.HTTPStatus, string(body))
-		file.Output(err.Error())
+		err = fmt.Errorf("Http error %d", status.HTTPStatus)
+		if len(status.Errors) > 0 {
+			file.Output(fmt.Sprintf("Http Error %d: %s", status.HTTPStatus, status.Errors[0].Message))
+		}
 	}
 
 	if status.HTTPStatus == 401 {
