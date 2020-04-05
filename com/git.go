@@ -26,11 +26,12 @@ func (file *FileWrapper) CheckoutOrCreateBranch(branch string) (switched, create
 
 	// Attempt checkout branch
 	if err = file.RunCmd("git", "checkout", branch); err != nil {
-		// Attempt to create branch
 		err = nil
 
+		// Attempt to create branch
 		if err = file.RunCmd("git", "checkout", "-b", branch); err == nil {
 			// Success
+			file.BranchCreated = true
 			created = true
 			switched = true
 		}
