@@ -12,10 +12,11 @@ type FileWrapper struct {
 
 	Version string
 
-	Updated  bool
-	Tagged   bool
-	Deployed bool
-	PROpened bool
+	Updated       bool
+	Tagged        bool
+	Deployed      bool
+	PROpened      bool
+	BranchCreated bool
 }
 
 // Debug prints a message to stdout if debug is true

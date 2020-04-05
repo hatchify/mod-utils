@@ -4,27 +4,29 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/hatchify/mod-utils/com"
+	"github.com/hatchify/mod-utils/sort"
 )
 
-// ExitWithErrorMessage prints message and exits
-func ExitWithErrorMessage(message string) {
+// exitWithErrorMessage prints message and exits
+func exitWithErrorMessage(message string) {
 	com.Println(message)
-	Exit(1)
+	exit(1)
 }
 
-// Exit shows help then exits with status prints message and exits
-func Exit(status int) {
+// exit shows help then exits with status prints message and exits
+func exit(status int) {
 	os.Exit(status)
 }
 
-// ShowWarningOrQuit will exit if user declines warning
-func ShowWarningOrQuit(message string) {
+// showWarningOrQuit will exit if user declines warning
+func showWarningOrQuit(message string) {
 	if !ShowWarning(message) {
 		com.Println("Exiting...")
-		Exit(0)
+		exit(0)
 	}
 }
 
@@ -57,5 +59,231 @@ func ShowWarning(message string) (ok bool) {
 	}
 
 	com.Println("Oops... Something went wrong.")
+	return
+}
+
+// Then handles cleanup after func
+func cleanupStash(libs sort.StringArray) {
+	closed = true
+
+	// Resume working directory
+	var f com.FileWrapper
+	for i := range libs {
+		f.Path = libs[i]
+		if f.StashPop() {
+			f.Output("Warning - Has local changes")
+		}
+	}
+}
+
+func (mu *MU) sync(lib Library, commitTitle, commitMessage string) {
+	// Update the dep if necessary
+	if err := lib.ModUpdate(mu.Options.Branch, commitTitle+"\n"+commitMessage); err == nil {
+		// Dep was updated
+		lib.File.Updated = true
+		mu.Stats.UpdateCount++
+		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
+	}
+}
+
+func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string) (err error) {
+	if mu.Options.PullRequest {
+		if len(branch) == 0 {
+			branch, err = lib.File.CurrentBranch()
+			if err != nil {
+				return
+			}
+		}
+		lib.File.Output("Attempting Pull Request " + branch + " to master...")
+
+		resp, err := lib.File.PullRequest(commitTitle, commitMessage, branch, "master")
+		if err == nil {
+			mu.Stats.PRCount++
+			mu.Stats.PROutput += resp.URL + "\n"
+			lib.File.PROpened = true
+			lib.File.Output("PR Created!")
+		} else {
+			if resp == nil || len(resp.Errors) == 0 {
+				lib.File.Output("Failed to create PR :( " + err.Error())
+
+			} else if strings.HasPrefix(resp.Errors[0].Message, "No commits between master and") {
+				// No PR to create
+			} else if strings.HasPrefix(resp.Errors[0].Message, "A pull request already exists for") {
+				// PR Exists
+			} else {
+				lib.File.Output("Failed to create PR :(")
+			}
+		}
+	}
+
+	return
+}
+
+func (mu *MU) tag(lib Library) {
+	if !mu.Options.Tag || strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
+		// Ignore tagging entirely
+		return
+	}
+
+	// Tag if forced or if able to incremen
+	if mu.Options.Tag && (len(mu.Options.SetVersion) > 0 || lib.ShouldTag()) {
+		// TODO: Support explicit versions?
+		lib.File.Version = lib.TagLib(mu.Options.SetVersion)
+		lib.File.Tagged = true
+		mu.Stats.TagCount++
+		mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
+	}
+
+	// Set tag for next lib if not set
+	if len(lib.File.Version) == 0 {
+		lib.File.Version = lib.GetCurrentTag()
+	}
+}
+
+func (mu *MU) removeBranchIfUnused(lib Library) {
+	if !lib.File.BranchCreated {
+		// Don't delete branches that were not created this session
+		return
+	}
+
+	// Check if created a branch we didn't need
+	if !lib.File.Updated && !lib.File.Deployed && !lib.File.PROpened {
+		switch mu.Options.Branch {
+		case "master", "develop", "staging", "beta", "prod", "":
+			// Ignore protected branches and empty branch
+		default:
+			// Delete branch
+			lib.File.CheckoutBranch("master")
+			if lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch) == nil {
+				lib.File.RunCmd("git", "push", "origin", "--delete", mu.Options.Branch)
+				if !closed {
+					lib.File.Output("Newly created branch did not update. Deleted unused branch")
+				}
+			}
+		}
+	}
+}
+
+func (mu *MU) getCommitDetails(lib Library) (commitTitle, commitMessage string) {
+	commitTitle = mu.Options.CommitMessage
+	if len(commitTitle) == 0 {
+		commitTitle = "Update Mod Files"
+	}
+
+	commitTitle = "gomu: " + commitTitle
+	commitMessage = ""
+	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
+		url := itr.File.GetGoURL()
+
+		if itr.File.Updated {
+			commitMessage += "\nUpdated " + url + "@" + itr.File.Version
+		} else {
+			commitMessage += "\nSet " + url + "@" + itr.File.Version
+		}
+	}
+
+	return
+}
+
+func (mu *MU) commit(lib Library) {
+	if mu.Options.Commit {
+		lib.File.Output("Checking for local changes...")
+		lib.File.Deployed = lib.ModDeploy("", mu.Options.CommitMessage)
+
+		if lib.File.Deployed {
+			mu.Stats.DeployedCount++
+			mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.DeployedCount) + ") " + lib.File.Path + "\n"
+		}
+	}
+}
+
+func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
+	lib.File.Output("Checking deps...")
+
+	// Aggregate updated versions of previously parsed deps
+	lib.ModAddDeps(fileHead)
+
+	if lib.updatedDeps == nil {
+		lib.File.Output("Skipping: No deps in chain to set.")
+	} else {
+		lib.File.Output("Setting local replacements...")
+
+		// Append local replacements for all libs in lib.updatedDeps
+		if lib.ModReplaceLocal() {
+			lib.File.Updated = true
+			mu.Stats.UpdateCount++
+			mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path + "\n"
+
+			lib.File.Output("Local replacements set!")
+		} else {
+			lib.File.Output("Failed to set local deps :(")
+		}
+	}
+}
+
+func (mu *MU) reset(lib Library) {
+	if len(mu.Options.Branch) > 0 {
+		lib.File.Output("Reverting mod files to <" + mu.Options.Branch + "> ref...")
+	} else {
+		lib.File.Output("Reverting mod files to last-committed ref...")
+	}
+
+	lib.File.StashPop()
+
+	// Revert any changes to mod files
+	lib.File.RunCmd("git", "checkout", mu.Options.Branch, "go.mod")
+	lib.File.RunCmd("git", "checkout", mu.Options.Branch, "go.sum")
+
+	lib.File.Output("Reverted mod files!")
+
+	if lib.File.HasChanges() {
+		lib.File.Output("Warning! Has local changes.")
+	}
+}
+
+func (mu *MU) pull(lib Library) {
+	// Check out branch if provided
+	if len(mu.Options.Branch) > 0 {
+		lib.File.Output("Checking out " + mu.Options.Branch + "...")
+
+		if lib.File.CheckoutBranch(mu.Options.Branch) != nil {
+			lib.File.Output("Failed to check out branch :(")
+		}
+	}
+
+	lib.File.Output("Pulling latest changes...")
+
+	if lib.File.Pull() == nil {
+		lib.File.Updated = true
+		mu.Stats.UpdateCount++
+		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path
+
+		mu.Stats.UpdatedOutput += "\n"
+	}
+
+}
+
+func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err error) {
+	if len(mu.Options.Branch) > 0 {
+		switched, created, err = lib.File.CheckoutOrCreateBranch(mu.Options.Branch)
+		if err != nil {
+			lib.File.Error("Failed to checkout " + mu.Options.Branch + " :(")
+			return
+		} else if !switched {
+			lib.File.Output("Already on " + mu.Options.Branch)
+		} else if !created {
+			lib.File.Output("Switched to " + mu.Options.Branch)
+		} else {
+			lib.File.Output("Created branch " + mu.Options.Branch + "!")
+			lib.File.RunCmd("git", "push", "-u", "origin", mu.Options.Branch)
+		}
+	}
+
+	lib.File.Output("Pulling latest changes...")
+
+	if err = lib.File.Pull(); err != nil {
+		lib.File.Output("Failed to pull " + mu.Options.Branch + " :(")
+	}
+
 	return
 }
