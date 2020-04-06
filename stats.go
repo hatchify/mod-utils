@@ -21,6 +21,9 @@ type ActionStats struct {
 
 	CreatedCount  int
 	CreatedOutput string
+
+	TestFailedCount  int
+	TestFailedOutput string
 }
 
 type toString int
@@ -46,11 +49,11 @@ func (stats ActionStats) Format() (output string) {
 		output += "Pulled latest version of <" + branch + "> in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
 	case "test":
-		if stats.UpdateCount == 0 {
+		if stats.TestFailedCount == 0 {
 			output += "All tests passed in " + strconv.Itoa(stats.DepCount) + " lib(s)!\n"
 		} else {
-			output += "Tests failed in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s) :(\n"
-			output += stats.UpdatedOutput
+			output += "Tests failed in " + strconv.Itoa(stats.TestFailedCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s) :(\n"
+			output += stats.TestFailedOutput
 		}
 	case "replace":
 		output += "Replaced local dependencies in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"

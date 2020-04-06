@@ -253,11 +253,11 @@ func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
 		lib.File.Output("Test failed :(")
 
 		// Tag failures as updated for stats
-		lib.File.Updated = true
-		mu.Stats.UpdateCount++
-		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path
+		lib.File.TestFailed = true
+		mu.Stats.TestFailedCount++
+		mu.Stats.TestFailedOutput += strconv.Itoa(mu.Stats.TestFailedCount) + ") " + lib.File.Path
 
-		mu.Stats.UpdatedOutput += "\n"
+		mu.Stats.TestFailedOutput += "\n"
 	}
 
 	return

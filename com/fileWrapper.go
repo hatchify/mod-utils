@@ -17,6 +17,7 @@ type FileWrapper struct {
 	Committed     bool
 	PROpened      bool
 	BranchCreated bool
+	TestFailed    bool
 }
 
 // Debug prints a message to stdout if debug is true
