@@ -155,12 +155,18 @@ func (mu *MU) removeBranchIfUnused(lib Library) {
 			// Delete branch
 			lib.File.CheckoutBranch("master")
 			if lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch) == nil {
+				// No longer needed
+				lib.File.BranchCreated = false
+
 				lib.File.RunCmd("git", "push", "origin", "--delete", mu.Options.Branch)
 				if !closed {
 					lib.File.Output("Newly created branch did not update. Deleted unused branch")
 				}
 			}
 		}
+	} else {
+		mu.Stats.CreatedCount++
+		mu.Stats.CreatedOutput += strconv.Itoa(mu.Stats.CreatedCount) + ") " + lib.File.Path + "#" + mu.Options.Branch + "\n"
 	}
 }
 
@@ -191,8 +197,8 @@ func (mu *MU) commit(lib Library) {
 		lib.File.Deployed = lib.ModDeploy("", mu.Options.CommitMessage)
 
 		if lib.File.Deployed {
-			mu.Stats.DeployedCount++
-			mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.DeployedCount) + ") " + lib.File.Path + "\n"
+			mu.Stats.CommitCount++
+			mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.CommitCount) + ") " + lib.File.Path + "\n"
 		}
 	}
 }
@@ -219,6 +225,27 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 			lib.File.Output("Failed to set local deps :(")
 		}
 	}
+}
+
+func (mu *MU) test(lib Library) (err error) {
+	lib.File.Output("Testing...")
+
+	lib.File.StashPop()
+
+	err = lib.File.RunCmd("go", "test")
+	if err == nil {
+		lib.File.Output("Test Passed!")
+
+		lib.File.Updated = true
+		mu.Stats.UpdateCount++
+		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path
+
+		mu.Stats.UpdatedOutput += "\n"
+	} else {
+		lib.File.Output("Test failed :(")
+	}
+
+	return
 }
 
 func (mu *MU) reset(lib Library) {
@@ -276,6 +303,12 @@ func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err err
 		} else {
 			lib.File.Output("Created branch " + mu.Options.Branch + "!")
 			lib.File.RunCmd("git", "push", "-u", "origin", mu.Options.Branch)
+
+			if mu.Options.Action == "pull" {
+				// This won't be deleted
+				mu.Stats.CreatedCount++
+				mu.Stats.CreatedOutput += strconv.Itoa(mu.Stats.CreatedCount) + ") " + lib.File.Path + "#" + mu.Options.Branch + "\n"
+			}
 		}
 	}
 

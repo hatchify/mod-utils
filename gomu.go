@@ -170,7 +170,11 @@ func (mu *MU) perform() {
 			warningActions = append(warningActions, "- open pull request for changes (if any)")
 		}
 		if mu.Options.Tag {
-			warningActions = append(warningActions, "- tag new versions (if updated)")
+			if len(mu.Options.SetVersion) > 0 {
+				warningActions = append(warningActions, "- tag all dependencies "+mu.Options.SetVersion)
+			} else {
+				warningActions = append(warningActions, "- increment tag version (if updated)")
+			}
 		}
 
 		com.Println("\n" + strings.Join(warningActions, "\n  "))
@@ -221,6 +225,10 @@ func (mu *MU) perform() {
 			continue
 		case "reset":
 			mu.reset(lib)
+			continue
+		case "test":
+			lib.File.StashPop()
+			mu.test(lib)
 			continue
 		}
 
@@ -283,6 +291,4 @@ func (mu *MU) perform() {
 			}
 		}
 	}
-
-	mu.Options.Branch = branch
 }
