@@ -250,11 +250,18 @@ func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
 	lib.File.Output("Building...")
 	if err = lib.File.RunCmd("go", "build", "-o", "test-out.o"); err != nil {
 		lib.File.Output("Build failed :(")
+		lib.File.TestFailed = true
+		mu.Stats.TestFailedCount++
+		mu.Stats.TestFailedOutput += strconv.Itoa(mu.Stats.TestFailedCount) + ") " + lib.File.Path
+
+		mu.Stats.TestFailedOutput += "\n"
 		return
 	}
+
+	lib.File.Output("Build Succeeded!")
 	lib.File.RunCmd("rm", "test-out.o")
 
-	lib.File.Output("Build Succeeded! Testing...")
+	lib.File.Output("Testing...")
 	output, err := lib.File.CmdOutput("go", "test")
 
 	if err == nil {
@@ -311,13 +318,16 @@ func (mu *MU) pull(lib Library) {
 	lib.File.Output("Pulling latest changes...")
 
 	if lib.File.Pull() == nil {
+		lib.File.Output("Updated successfully!")
+
 		lib.File.Updated = true
 		mu.Stats.UpdateCount++
 		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path
 
 		mu.Stats.UpdatedOutput += "\n"
+	} else {
+		lib.File.Output("Failed to update :(")
 	}
-
 }
 
 func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err error) {
