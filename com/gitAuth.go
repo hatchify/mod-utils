@@ -9,8 +9,6 @@ import (
 	"os/user"
 	"path"
 	"strings"
-
-	"github.com/hatchify/simply"
 )
 
 var configName = ".gomurc"
@@ -105,8 +103,11 @@ func (authObject *GitAuthObject) Setup() (err error) {
 				token = text
 				authObject.User = user
 				authObject.Token = token
-				fmt.Println("Saving: ", simply.Stringify(authObject))
-				authObject.Save()
+				if err = authObject.Save(); err != nil {
+					fmt.Println("Error saving credentials :(\n", err)
+				} else {
+					fmt.Println("Saved Credentials!")
+				}
 				return
 			}
 
