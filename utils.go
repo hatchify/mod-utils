@@ -132,10 +132,13 @@ func (mu *MU) tag(lib Library) {
 
 	// Tag if forced or if able to increment
 	if mu.Options.Tag && (len(mu.Options.SetVersion) > 0 || lib.ShouldTag()) {
-		lib.File.Version = lib.TagLib(mu.Options.SetVersion)
-		lib.File.Tagged = true
-		mu.Stats.TagCount++
-		mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
+		newTag := lib.TagLib(mu.Options.SetVersion)
+		if len(newTag) > 0 {
+			lib.File.Version = newTag
+			lib.File.Tagged = true
+			mu.Stats.TagCount++
+			mu.Stats.TaggedOutput += strconv.Itoa(mu.Stats.TagCount) + ") " + lib.File.Path + " " + lib.File.Version + "\n"
+		}
 	}
 
 	// Set tag for next lib if not set
