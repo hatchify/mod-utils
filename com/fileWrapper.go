@@ -14,7 +14,7 @@ type FileWrapper struct {
 
 	Updated       bool
 	Tagged        bool
-	Deployed      bool
+	Committed     bool
 	PROpened      bool
 	BranchCreated bool
 }

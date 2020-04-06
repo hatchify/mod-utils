@@ -65,7 +65,7 @@ func (lib *Library) ModSetDeps() {
 
 		// Get dep @ version (-d avoids building)
 		if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
-			if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
+			if itr.File.Updated || itr.File.Tagged || itr.File.Committed {
 				lib.File.Output("Updated " + url + " @ " + itr.File.Version)
 			} else {
 				lib.File.Output("Set " + url + " @ " + itr.File.Version)

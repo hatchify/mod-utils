@@ -147,7 +147,7 @@ func (mu *MU) removeBranchIfUnused(lib Library) {
 	}
 
 	// Check if created a branch we didn't need
-	if !lib.File.Updated && !lib.File.Deployed && !lib.File.PROpened {
+	if !lib.File.Updated && !lib.File.Committed && !lib.File.PROpened {
 		switch mu.Options.Branch {
 		case "master", "develop", "staging", "beta", "prod", "":
 			// Ignore protected branches and empty branch
@@ -194,9 +194,9 @@ func (mu *MU) getCommitDetails(lib Library) (commitTitle, commitMessage string) 
 func (mu *MU) commit(lib Library) {
 	if mu.Options.Commit {
 		lib.File.Output("Checking for local changes...")
-		lib.File.Deployed = lib.ModDeploy("", mu.Options.CommitMessage)
+		lib.File.Committed = lib.ModDeploy("", mu.Options.CommitMessage)
 
-		if lib.File.Deployed {
+		if lib.File.Committed {
 			mu.Stats.CommitCount++
 			mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.CommitCount) + ") " + lib.File.Path + "\n"
 		}
@@ -229,20 +229,20 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 
 func (mu *MU) test(lib Library) (err error) {
 	lib.File.Output("Testing...")
-
-	lib.File.StashPop()
-
 	err = lib.File.RunCmd("go", "test")
+
 	if err == nil {
 		lib.File.Output("Test Passed!")
 
+	} else {
+		lib.File.Output("Test failed :(")
+
+		// Tag failures as updated for stats
 		lib.File.Updated = true
 		mu.Stats.UpdateCount++
 		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path
 
 		mu.Stats.UpdatedOutput += "\n"
-	} else {
-		lib.File.Output("Test failed :(")
 	}
 
 	return

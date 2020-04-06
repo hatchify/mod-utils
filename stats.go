@@ -46,8 +46,12 @@ func (stats ActionStats) Format() (output string) {
 		output += "Pulled latest version of <" + branch + "> in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
 	case "test":
-		output += "Tests passed in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
-		output += stats.UpdatedOutput
+		if stats.UpdateCount == 0 {
+			output += "All tests passed in " + strconv.Itoa(stats.DepCount) + " lib(s)!\n"
+		} else {
+			output += "Tests failed in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s) :(\n"
+			output += stats.UpdatedOutput
+		}
 	case "replace":
 		output += "Replaced local dependencies in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
