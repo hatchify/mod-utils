@@ -247,7 +247,7 @@ func (mu *MU) perform() {
 		}
 
 		// Aggregate updated versions of previously parsed deps
-		lib.ModAddDeps(fileHead)
+		lib.ModAddDeps(fileHead, false)
 
 		mu.commit(lib)
 

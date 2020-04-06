@@ -207,7 +207,7 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 	lib.File.Output("Checking deps...")
 
 	// Aggregate updated versions of previously parsed deps
-	lib.ModAddDeps(fileHead)
+	lib.ModAddDeps(fileHead, true)
 
 	if lib.updatedDeps == nil {
 		lib.File.Output("Skipping: No deps in chain to set.")
@@ -232,7 +232,7 @@ func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
 		lib.File.Output("Applying local changes...")
 	}
 
-	lib.ModAddDeps(fileHead)
+	lib.ModAddDeps(fileHead, false)
 
 	if lib.updatedDeps != nil {
 		lib.File.Output("Setting dep versions...")
