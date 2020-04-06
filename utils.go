@@ -239,7 +239,14 @@ func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
 		lib.ModSetDeps()
 	}
 
-	lib.File.Output("Testing...")
+	lib.File.Output("Building...")
+	if err = lib.File.RunCmd("go", "build", "-o", "test-out.o"); err != nil {
+		lib.File.Output("Build failed :(")
+		return
+	}
+	lib.File.RunCmd("rm", "test-out.o")
+
+	lib.File.Output("Build Succeeded! Testing...")
 	output, err := lib.File.CmdOutput("go", "test")
 
 	if err == nil {
