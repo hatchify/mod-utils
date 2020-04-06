@@ -227,12 +227,27 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 	}
 }
 
-func (mu *MU) test(lib Library) (err error) {
+func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
+	if lib.File.StashPop() {
+		lib.File.Output("Applying local changes...")
+	}
+
+	lib.ModAddDeps(fileHead)
+
+	if lib.updatedDeps != nil {
+		lib.File.Output("Setting dep versions...")
+		lib.ModSetDeps()
+	}
+
 	lib.File.Output("Testing...")
-	err = lib.File.RunCmd("go", "test")
+	output, err := lib.File.CmdOutput("go", "test")
 
 	if err == nil {
-		lib.File.Output("Test Passed!")
+		if strings.Contains(output, "PASS") {
+			lib.File.Output("Test Passed!")
+		} else {
+			lib.File.Output("No tests to run.")
+		}
 
 	} else {
 		lib.File.Output("Test failed :(")

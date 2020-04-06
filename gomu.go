@@ -227,14 +227,7 @@ func (mu *MU) perform() {
 			mu.reset(lib)
 			continue
 		case "test":
-			lib.File.StashPop()
-
-			lib.File.Output("Setting dep versions...")
-
-			lib.ModAddDeps(fileHead)
-			lib.ModSetDeps()
-
-			mu.test(lib)
+			mu.test(lib, fileHead)
 			continue
 		}
 
