@@ -125,9 +125,13 @@ func (mu *MU) tag(lib Library) {
 		return
 	}
 
-	// Tag if forced or if able to incremen
+	if lib.File.Version != "" {
+		// Tag already set
+		return
+	}
+
+	// Tag if forced or if able to increment
 	if mu.Options.Tag && (len(mu.Options.SetVersion) > 0 || lib.ShouldTag()) {
-		// TODO: Support explicit versions?
 		lib.File.Version = lib.TagLib(mu.Options.SetVersion)
 		lib.File.Tagged = true
 		mu.Stats.TagCount++
