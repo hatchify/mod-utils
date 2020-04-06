@@ -13,11 +13,14 @@ type ActionStats struct {
 	TagCount     int
 	TaggedOutput string
 
-	DeployedCount  int
+	CommitCount    int
 	DeployedOutput string
 
 	PRCount  int
 	PROutput string
+
+	CreatedCount  int
+	CreatedOutput string
 }
 
 type toString int
@@ -38,60 +41,68 @@ func (stats ActionStats) Format() (output string) {
 		branch = "Current Branch"
 	}
 
-	if stats.Options.Action == "pull" {
-		// Print pull status
+	switch stats.Options.Action {
+	case "pull":
 		output += "Pulled latest version of <" + branch + "> in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
-		return
-	}
-
-	if stats.Options.Action == "replace" {
-		// Print replacement status
+	case "test":
+		if stats.UpdateCount == 0 {
+			output += "All tests passed in " + strconv.Itoa(stats.DepCount) + " lib(s)!\n"
+		} else {
+			output += "Tests failed in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s) :(\n"
+			output += stats.UpdatedOutput
+		}
+	case "replace":
 		output += "Replaced local dependencies in " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 		output += stats.UpdatedOutput
-		return
-	}
-
-	if stats.Options.Action == "reset" {
-		// Print replacement status
+	case "reset":
 		output += "Reset mod files in " + strconv.Itoa(stats.DepCount) + " lib(s)\n"
 		// TODO: Count libs with changes here?
-		output += "Warning: Local changes will no longer apply" //in " + strconv.Itoa(stats.DepCount) + " lib(s)\n"
-		return
-	}
-
-	// Print update status
-	if stats.UpdateCount == 0 {
-		output += "All " + strconv.Itoa(stats.DepCount) + " lib dependencies already up to date!"
-	} else {
-		output += "Updated mod files in <" + branch + "> for " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
-		output += stats.UpdatedOutput
+		output += "Warning: Local changes will no longer apply\n" //in " + strconv.Itoa(stats.DepCount) + " lib(s)\n"
+	case "sync":
+		// Print update status
+		if stats.UpdateCount == 0 {
+			output += "All " + strconv.Itoa(stats.DepCount) + " lib dependencies already up to date!\n"
+		} else {
+			output += "Updated mod files in <" + branch + "> for " + strconv.Itoa(stats.UpdateCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+			output += stats.UpdatedOutput
+		}
 	}
 
 	if stats.Options.Tag {
 		// Print tag status
 		output += "\n"
 		if stats.TagCount == 0 {
-			output += "All " + strconv.Itoa(stats.DepCount) + " lib tags already up to date!"
+			output += "All " + strconv.Itoa(stats.DepCount) + " lib tags already up to date!\n"
 		} else {
-			output += "Updated tag for " + strconv.Itoa(stats.TagCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+			if len(stats.Options.SetVersion) == 0 {
+				output += "Updated tag for " + strconv.Itoa(stats.TagCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+			} else {
+				output += "Tag set to " + stats.Options.SetVersion + " for " + strconv.Itoa(stats.TagCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+			}
 			output += stats.TaggedOutput
 		}
 	}
 
 	if stats.Options.Commit {
-		// Print deploy status
+		// Print commit status
 		output += "\n"
-		if stats.DeployedCount == 0 {
+		if stats.CommitCount == 0 {
 			output += "No local changes to commit in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"
 		} else {
-			output += "Committed new changes to <" + branch + "> in " + strconv.Itoa(stats.DeployedCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+			output += "Committed new changes to <" + branch + "> in " + strconv.Itoa(stats.CommitCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
 			output += stats.DeployedOutput
 		}
 	}
 
+	if stats.CreatedCount > 0 {
+		output += "\n"
+		output += "Created branch <" + branch + "> in " + strconv.Itoa(stats.CreatedCount) + "/" + strconv.Itoa(stats.DepCount) + " lib(s):\n"
+		output += stats.CreatedOutput
+	}
+
 	if stats.Options.PullRequest {
-		// Print deploy status
+		// Print pr status
 		output += "\n"
 		if stats.PRCount == 0 {
 			output += "No Pull Requests opened in " + strconv.Itoa(stats.DepCount) + " lib(s).\n"

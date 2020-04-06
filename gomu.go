@@ -170,7 +170,11 @@ func (mu *MU) perform() {
 			warningActions = append(warningActions, "- open pull request for changes (if any)")
 		}
 		if mu.Options.Tag {
-			warningActions = append(warningActions, "- tag new versions (if updated)")
+			if len(mu.Options.SetVersion) > 0 {
+				warningActions = append(warningActions, "- tag all dependencies "+mu.Options.SetVersion)
+			} else {
+				warningActions = append(warningActions, "- increment tag version (if updated)")
+			}
 		}
 
 		com.Println("\n" + strings.Join(warningActions, "\n  "))
@@ -221,6 +225,9 @@ func (mu *MU) perform() {
 			continue
 		case "reset":
 			mu.reset(lib)
+			continue
+		case "test":
+			mu.test(lib, fileHead)
 			continue
 		}
 
@@ -278,11 +285,9 @@ func (mu *MU) perform() {
 	if com.GetLogLevel() == com.NAMEONLY {
 		// Print names and quit
 		for fileItr := fileHead; fileItr != nil; fileItr = fileItr.Next {
-			if fileItr.File.Tagged || fileItr.File.Deployed || fileItr.File.Updated || fileItr.File.PROpened || mu.Options.Action == "list" {
+			if fileItr.File.Tagged || fileItr.File.Committed || fileItr.File.Updated || fileItr.File.PROpened || mu.Options.Action == "list" {
 				com.Outputln(com.NAMEONLY, fileItr.File.GetGoURL())
 			}
 		}
 	}
-
-	mu.Options.Branch = branch
 }

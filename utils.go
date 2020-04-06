@@ -147,7 +147,7 @@ func (mu *MU) removeBranchIfUnused(lib Library) {
 	}
 
 	// Check if created a branch we didn't need
-	if !lib.File.Updated && !lib.File.Deployed && !lib.File.PROpened {
+	if !lib.File.Updated && !lib.File.Committed && !lib.File.PROpened {
 		switch mu.Options.Branch {
 		case "master", "develop", "staging", "beta", "prod", "":
 			// Ignore protected branches and empty branch
@@ -155,12 +155,18 @@ func (mu *MU) removeBranchIfUnused(lib Library) {
 			// Delete branch
 			lib.File.CheckoutBranch("master")
 			if lib.File.RunCmd("git", "branch", "-D", mu.Options.Branch) == nil {
+				// No longer needed
+				lib.File.BranchCreated = false
+
 				lib.File.RunCmd("git", "push", "origin", "--delete", mu.Options.Branch)
 				if !closed {
 					lib.File.Output("Newly created branch did not update. Deleted unused branch")
 				}
 			}
 		}
+	} else {
+		mu.Stats.CreatedCount++
+		mu.Stats.CreatedOutput += strconv.Itoa(mu.Stats.CreatedCount) + ") " + lib.File.Path + "#" + mu.Options.Branch + "\n"
 	}
 }
 
@@ -188,11 +194,11 @@ func (mu *MU) getCommitDetails(lib Library) (commitTitle, commitMessage string) 
 func (mu *MU) commit(lib Library) {
 	if mu.Options.Commit {
 		lib.File.Output("Checking for local changes...")
-		lib.File.Deployed = lib.ModDeploy("", mu.Options.CommitMessage)
+		lib.File.Committed = lib.ModDeploy("", mu.Options.CommitMessage)
 
-		if lib.File.Deployed {
-			mu.Stats.DeployedCount++
-			mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.DeployedCount) + ") " + lib.File.Path + "\n"
+		if lib.File.Committed {
+			mu.Stats.CommitCount++
+			mu.Stats.DeployedOutput += strconv.Itoa(mu.Stats.CommitCount) + ") " + lib.File.Path + "\n"
 		}
 	}
 }
@@ -219,6 +225,42 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 			lib.File.Output("Failed to set local deps :(")
 		}
 	}
+}
+
+func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
+	if lib.File.StashPop() {
+		lib.File.Output("Applying local changes...")
+	}
+
+	lib.ModAddDeps(fileHead)
+
+	if lib.updatedDeps != nil {
+		lib.File.Output("Setting dep versions...")
+		lib.ModSetDeps()
+	}
+
+	lib.File.Output("Testing...")
+	output, err := lib.File.CmdOutput("go", "test")
+
+	if err == nil {
+		if strings.Contains(output, "PASS") {
+			lib.File.Output("Test Passed!")
+		} else {
+			lib.File.Output("No tests to run.")
+		}
+
+	} else {
+		lib.File.Output("Test failed :(")
+
+		// Tag failures as updated for stats
+		lib.File.Updated = true
+		mu.Stats.UpdateCount++
+		mu.Stats.UpdatedOutput += strconv.Itoa(mu.Stats.UpdateCount) + ") " + lib.File.Path
+
+		mu.Stats.UpdatedOutput += "\n"
+	}
+
+	return
 }
 
 func (mu *MU) reset(lib Library) {
@@ -276,6 +318,12 @@ func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err err
 		} else {
 			lib.File.Output("Created branch " + mu.Options.Branch + "!")
 			lib.File.RunCmd("git", "push", "-u", "origin", mu.Options.Branch)
+
+			if mu.Options.Action == "pull" {
+				// This won't be deleted
+				mu.Stats.CreatedCount++
+				mu.Stats.CreatedOutput += strconv.Itoa(mu.Stats.CreatedCount) + ") " + lib.File.Path + "#" + mu.Options.Branch + "\n"
+			}
 		}
 	}
 

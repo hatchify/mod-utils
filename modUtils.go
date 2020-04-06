@@ -1,6 +1,7 @@
 package gomu
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -42,7 +43,7 @@ func (lib *Library) ModClearFiles() (hasModFile, hasSumFile bool) {
 func (lib *Library) ModAddDeps(listHead *sort.FileNode) {
 	for itr := listHead; itr != nil && itr.File.Path != lib.File.Path; itr = itr.Next {
 		// Check if lib/go.mod includes the file (not go.sum)
-		if lib.File.ImportsDirectly(itr.File) {
+		if (itr.File.Updated || itr.File.Tagged || itr.File.Committed || len(itr.File.Version) != 0) && lib.File.ImportsDirectly(itr.File) {
 			// Create new node to add to independent list on lib with same file ref
 			var node sort.FileNode
 			node.File = itr.File
@@ -52,7 +53,7 @@ func (lib *Library) ModAddDeps(listHead *sort.FileNode) {
 }
 
 // ModSetDeps adds a dep@version to go.mod to force-update or force-downgrade any deps in the filtered chain
-func (lib *Library) ModSetDeps() {
+func (lib *Library) ModSetDeps() (err error) {
 	// Iterate through dep chain
 	for itr := lib.updatedDeps; itr != nil; itr = itr.Next {
 		if len(itr.File.Version) == 0 {
@@ -65,15 +66,17 @@ func (lib *Library) ModSetDeps() {
 
 		// Get dep @ version (-d avoids building)
 		if lib.File.RunCmd("go", "get", "-d", url+"@"+itr.File.Version) == nil {
-			if itr.File.Updated || itr.File.Tagged || itr.File.Deployed {
+			if itr.File.Updated || itr.File.Tagged || itr.File.Committed {
 				lib.File.Output("Updated " + url + " @ " + itr.File.Version)
 			} else {
 				lib.File.Output("Set " + url + " @ " + itr.File.Version)
 			}
 		} else {
 			lib.File.Output("Error: Failed to get " + url + " @ " + itr.File.Version)
+			err = fmt.Errorf("Unable to set dependency: " + url + " @ " + itr.File.Version)
 		}
 	}
+	return
 }
 
 // ModReplaceLocalFor adds replace clause for provided file
