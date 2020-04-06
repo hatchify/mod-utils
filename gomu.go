@@ -215,7 +215,6 @@ func (mu *MU) perform() {
 		case "pull":
 			if len(lib.File.Version) > 0 {
 				lib.File.Output("Already has version set: " + lib.File.Version)
-				lib.File.CheckoutBranch(lib.File.Version)
 			} else {
 				mu.pull(lib)
 			}
