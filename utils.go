@@ -237,9 +237,11 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 
 func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
 	if lib.File.StashPop() {
+		// Local changes exist
 		lib.File.Output("Applying local changes...")
 	}
 
+	// Only set updated deps
 	lib.ModAddDeps(fileHead, false)
 
 	if lib.updatedDeps != nil {
@@ -248,14 +250,19 @@ func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
 	}
 
 	lib.File.Output("Building...")
+	// Try building
 	if err = lib.File.RunCmd("go", "build", "-o", "test-out.o"); err != nil {
-		lib.File.Output("Build failed :(")
-		lib.File.TestFailed = true
-		mu.Stats.TestFailedCount++
-		mu.Stats.TestFailedOutput += strconv.Itoa(mu.Stats.TestFailedCount) + ") " + lib.File.Path
+		err = nil
+		// Try plugin mode
+		if err = lib.File.RunCmd("go", "build", "-buildmode=plugin", "-o", "test-out.o"); err != nil {
+			lib.File.Output("Build failed :(")
+			lib.File.TestFailed = true
+			mu.Stats.TestFailedCount++
+			mu.Stats.TestFailedOutput += strconv.Itoa(mu.Stats.TestFailedCount) + ") " + lib.File.Path
 
-		mu.Stats.TestFailedOutput += "\n"
-		return
+			mu.Stats.TestFailedOutput += "\n"
+			return
+		}
 	}
 
 	lib.File.Output("Build Succeeded!")
