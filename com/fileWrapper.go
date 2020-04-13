@@ -64,7 +64,26 @@ func (file *FileWrapper) GetGoURL() (url string) {
 func (file *FileWrapper) ImportsDirectly(dep *FileWrapper) bool {
 	// Read library/go.mod
 	if libMod, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
-		return strings.Contains(string(libMod), dep.Path+" v")
+		return strings.Contains(string(libMod), "/"+dep.Path+" v")
+	}
+
+	return false
+}
+
+// ImportsDirectlyAny returns true if file depends on any of the filter deps. Returns false if slice is empty
+func (file *FileWrapper) ImportsDirectlyAny(deps []*FileWrapper) bool {
+	// Read library/go.sum once
+	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
+		// Parse sum once
+		goSum := string(libSum)
+
+		// Check each dep in parsed sum
+		for i := range deps {
+			if strings.Contains(goSum, "/"+deps[i].Path+" v") {
+				// This lib is necessary
+				return true
+			}
+		}
 	}
 
 	return false
@@ -75,7 +94,7 @@ func (file *FileWrapper) ImportsDirectly(dep *FileWrapper) bool {
 func (file *FileWrapper) DependsOn(dep *FileWrapper) bool {
 	// Read library/go.sum
 	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.sum")); err == nil {
-		return strings.Contains(string(libSum), dep.Path+" v")
+		return strings.Contains(string(libSum), "/"+dep.Path+" v")
 	}
 
 	return false
@@ -90,7 +109,7 @@ func (file *FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 
 		// Check each dep in parsed sum
 		for i := range deps {
-			if strings.Contains(goSum, deps[i].Path+" v") {
+			if strings.Contains(goSum, "/"+deps[i].Path+" v") {
 				// This lib is necessary
 				return true
 			}
@@ -103,7 +122,7 @@ func (file *FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 // MatchesAny returns true if file matches one of the deps
 func (file *FileWrapper) MatchesAny(deps []*FileWrapper) bool {
 	for i := range deps {
-		if strings.HasSuffix(file.Path, deps[i].Path) {
+		if strings.HasSuffix(file.Path, "/"+deps[i].Path) {
 			file.Version = deps[i].Version
 			return true
 		}
