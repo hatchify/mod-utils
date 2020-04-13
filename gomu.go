@@ -37,6 +37,7 @@ type Options struct {
 	Tag         bool
 	SetVersion  string
 
+	DirectImport       bool
 	TargetDirectories  sort.StringArray
 	FilterDependencies sort.StringArray
 
@@ -138,7 +139,14 @@ func (mu *MU) perform() {
 
 	// Sort libs
 	var fileHead *sort.FileNode
-	fileHead, mu.Stats.DepCount = libs.SortedDependingOnAny(mu.Options.FilterDependencies)
+	if mu.Options.DirectImport {
+		// Only check files in go.mod
+		fileHead, mu.Stats.DepCount = libs.SortedDirectDeps(mu.Options.FilterDependencies)
+	} else {
+		// Check all files in go.sum
+		fileHead, mu.Stats.DepCount = libs.SortedRecursiveDeps(mu.Options.FilterDependencies)
+	}
+
 	if len(mu.Options.FilterDependencies) == 0 || len(mu.Options.FilterDependencies) == 0 {
 		com.Println("\nPerforming", mu.Options.Action, "on "+branch+" branch for", mu.Stats.DepCount, "lib(s)")
 	} else {
