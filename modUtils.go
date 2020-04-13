@@ -43,7 +43,7 @@ func (lib *Library) ModClearFiles() (hasModFile, hasSumFile bool) {
 func (lib *Library) ModAddDeps(listHead *sort.FileNode, shouldForce bool) {
 	for itr := listHead; itr != nil && itr.File.Path != lib.File.Path; itr = itr.Next {
 		// Check if lib/go.mod includes the file (not go.sum)
-		if (shouldForce || itr.File.Updated || itr.File.Tagged || itr.File.Committed || len(itr.File.Version) != 0) && lib.File.ImportsDirectly(itr.File) {
+		if (shouldForce || itr.File.Updated || itr.File.Tagged || itr.File.Committed || len(itr.File.Version) != 0) && lib.File.DirectlyImports(itr.File) {
 			// Create new node to add to independent list on lib with same file ref
 			var node sort.FileNode
 			node.File = itr.File

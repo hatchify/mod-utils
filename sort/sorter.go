@@ -92,7 +92,7 @@ func (libs StringArray) SortedDirectDeps(subDeps StringArray) (listHead *FileNod
 		defer f.Close()
 
 		// Add file to list if no filters are provided, or if file depends on any of the filter deps
-		if len(filters) == 0 || node.File.MatchesAny(filters) || node.File.ImportsDirectlyAny(filters) {
+		if len(filters) == 0 || node.File.MatchesAny(filters) || node.File.DirectlyImportsAny(filters) {
 			// Insert file
 			node.InsertInto(&listHead)
 			count++
