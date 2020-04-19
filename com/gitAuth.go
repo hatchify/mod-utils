@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"os/user"
 	"path"
@@ -12,6 +14,16 @@ import (
 )
 
 var configName = ".gomurc"
+
+type secretRequest struct {
+	Encrypted string `json:"encrypted_value,omitempty"`
+
+	PublicKey string `json:"key,omitempty"`
+	KeyID     string `json:"key_id,omitempty"`
+
+	HTTPStatus int               `json:"httpStatus,omitempty"`
+	Errors     []PRResponseError `json:"errors,omitempty"`
+}
 
 type prRequest struct {
 	Title string `json:"title"`
@@ -66,6 +78,82 @@ func (authObject *GitAuthObject) Save() (err error) {
 	}
 
 	return ioutil.WriteFile(path.Join(usr.HomeDir, configName), data, os.ModePerm)
+}
+
+func (authObject *GitAuthObject) Encrypt(secret, key string) (encrypted string, err error) {
+	// TODO: Sodium encrypt https://help.github.com/actions/automating-your-workflow-with-github-actions/creating-and-using-encrypted-secrets
+
+	return
+}
+
+// GetPublicKey will set public key and key id for encrypting secrets
+func (authObject *GitAuthObject) GetPublicKey(goURL string) (id, key string, err error) {
+	// Get git host
+	comps := strings.Split(goURL, "/")
+	switch comps[0] {
+	case "github.com":
+		// Supported
+	default:
+		// Not Supported
+		err = fmt.Errorf("%s currently not supported for pull requests", comps[0])
+		return
+	}
+
+	// GitHub api url
+	apiURL := "https://api." + comps[0]
+	resource := "/repos/" + strings.Join(comps[1:], "/") + "/actions/secrets/public-key"
+
+	u, err := url.ParseRequestURI(apiURL)
+	if err != nil {
+		err = fmt.Errorf("Unable to parse url %s", apiURL)
+		return
+	}
+
+	// Check auth token
+	if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
+		// Get new creds
+		err = fmt.Errorf("Unable to parse github username and token")
+		return
+	}
+
+	// Make request
+	u.Path = resource
+	urlStr := u.String()
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", urlStr, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Add("Authorization", "token "+authObject.Token)
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
+	// Execute Request
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+
+	// Read response
+	var body []byte
+	if body, err = ioutil.ReadAll(resp.Body); err != nil {
+		return
+	}
+	resp.Body.Close()
+	payload := &secretRequest{}
+	err = json.Unmarshal(body, payload)
+
+	// Return status
+	payload.HTTPStatus = resp.StatusCode
+	if payload.HTTPStatus >= 300 {
+		err = fmt.Errorf("Http error %d", payload.HTTPStatus)
+		if len(payload.Errors) > 0 {
+			err = fmt.Errorf("Http Error %d: %s", payload.HTTPStatus, payload.Errors[0].Message)
+			return
+		}
+	}
+
+	return
 }
 
 // Setup configures credentials from user input

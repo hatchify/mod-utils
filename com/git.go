@@ -126,6 +126,114 @@ func (file *FileWrapper) CurrentBranch() (branch string, err error) {
 	return
 }
 
+// AddSecret will set a secret for the repository
+func (file *FileWrapper) AddSecret(name, secret string) (err error) {
+	comps := strings.Split(file.GetGoURL(), "/")
+	switch comps[0] {
+	case "github.com":
+		// Supported
+	default:
+		// Not Supported
+		err = fmt.Errorf("%s currently not supported for secretes", comps[0])
+		return
+	}
+	apiURL := "https://api." + comps[0]
+	resource := "/repos/" + strings.Join(comps[1:], "/") + "/actions/secrets/" + name
+
+	u, err := url.ParseRequestURI(apiURL)
+	if err != nil {
+		err = fmt.Errorf("Unable to url %s", apiURL)
+		return
+	}
+
+	// Get auth token
+	authObject, err := LoadAuth()
+	if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
+		// Get new creds
+		file.Output("Needs github credentials for PR...")
+		if authObject.Setup() != nil {
+			file.Output("Error saving :(")
+			err = fmt.Errorf("Unable to parse github username and token")
+			return
+		}
+		err = nil
+		file.Output("Saved Credentials!")
+	}
+
+	file.Output("Getting encryption key...")
+	id, key, err := authObject.GetPublicKey(file.GetGoURL())
+	if err != nil {
+		file.Output("Error getting public key :(")
+		err = fmt.Errorf("Unable get github public key")
+		return
+	}
+
+	file.Output("Encrypting secret...")
+	encrypted, err := authObject.Encrypt(secret, key)
+	if err != nil {
+		err = fmt.Errorf("Unable to encrypt secret")
+		return
+	}
+
+	file.Output("Encrypting secret...")
+	post := &secretRequest{Encrypted: encrypted, KeyID: id}
+	data, err := json.Marshal(post)
+	if err != nil {
+		err = fmt.Errorf("Unable to parse secret request")
+		return
+	}
+
+	// Make request
+	u.Path = resource
+	urlStr := u.String()
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", urlStr, bytes.NewBuffer(data))
+	if err != nil {
+		return
+	}
+	req.Header.Add("Authorization", "token "+authObject.Token)
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
+	// Execute Request
+	file.Output("Setting repository secret...")
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	resp.Body.Close()
+
+	// Return status
+	if resp.StatusCode == 200 {
+		file.Output("Successfully set repository secret!")
+	} else {
+		err = fmt.Errorf("Http error %d", resp.StatusCode)
+	}
+
+	return
+}
+
+// AddGitWorkflow will set an example yml file for the repo
+func (file *FileWrapper) AddGitWorkflow(exampleYmlPath string) (err error) {
+	// Get source dir and template
+	sourceDir, ymlTemplate := path.Split(exampleYmlPath)
+	ymlSource := &FileWrapper{Path: sourceDir}
+	templateSouce := path.Join(ymlSource.AbsPath(), ymlTemplate)
+
+	// Prep workflow dir
+	workflowPath := path.Join(".git", "workflows")
+	file.RunCmd("mkdir -p", workflowPath)
+	newWorkflow := path.Join(workflowPath, ymlTemplate)
+
+	// Copy example yml file to workflow dir
+	if file.RunCmd("cp", templateSouce, newWorkflow) != nil {
+		err = fmt.Errorf("Unable to copy %s to %s", exampleYmlPath, workflowPath)
+		return
+	}
+
+	return
+}
+
 // PullRequest opens a PR for the specified url on the specified branch
 func (file *FileWrapper) PullRequest(title, message, branch, target string) (status *PRResponse, err error) {
 	if branch == target {

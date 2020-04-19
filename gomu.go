@@ -37,6 +37,8 @@ type Options struct {
 	Tag         bool
 	SetVersion  string
 
+	SourcePath string
+
 	DirectImport       bool
 	TargetDirectories  sort.StringArray
 	FilterDependencies sort.StringArray
@@ -236,6 +238,9 @@ func (mu *MU) perform() {
 		case "test":
 			mu.test(lib, fileHead)
 			continue
+		case "secret":
+			mu.addSecret(lib)
+			continue
 		}
 
 		// Sync
@@ -252,8 +257,13 @@ func (mu *MU) perform() {
 			return
 		}
 
-		// Aggregate updated versions of previously parsed deps
-		lib.ModAddDeps(fileHead, false)
+		if mu.Options.Action == "workflow" {
+			// Add auto tag workflow
+			lib.File.AddGitWorkflow(mu.Options.SourcePath)
+		} else {
+			// Aggregate updated versions of previously parsed deps
+			lib.ModAddDeps(fileHead, false)
+		}
 
 		mu.commit(lib)
 

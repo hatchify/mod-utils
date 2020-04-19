@@ -3,7 +3,9 @@ package gomu
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -233,6 +235,30 @@ func (mu *MU) replace(lib Library, fileHead *sort.FileNode) {
 			lib.File.Output("Failed to set local deps :(")
 		}
 	}
+}
+
+func (mu *MU) addSecret(lib Library) (err error) {
+	// Get secret name from filepath
+	_, secretName := path.Split(mu.Options.SourcePath)
+	secretFile, err := os.Open(mu.Options.SourcePath)
+	if err != nil {
+		return err
+	}
+	defer secretFile.Close()
+
+	// Read secret from file
+	var body []byte
+	if body, err = ioutil.ReadAll(secretFile); err != nil {
+		return
+	}
+
+	// Set secret with filename on repo
+	if err = lib.File.AddSecret(secretName, string(body)); err != nil {
+		lib.File.Output("Unable to add secret :(")
+		return
+	}
+
+	return
 }
 
 func (mu *MU) test(lib Library, fileHead *sort.FileNode) (err error) {
