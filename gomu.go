@@ -27,21 +27,21 @@ type MU struct {
 
 // Options represents different settings to perform an action
 type Options struct {
-	Action string `json:"--"` // Not supported from server
+	Action string `json:"action,-"` // Not supported from server
 
 	Branch        string `json:"branch"`
 	CommitMessage string `json:"message"`
 
-	Commit      bool   `json"--"` // Not supported from server
+	Commit      bool   `json:"commit,-"` // Not supported from server
 	PullRequest bool   `json:"createPR"`
 	Tag         bool   `json:"shouldTag"`
 	SetVersion  string `json:"setVersion"`
 
-	SourcePath string `json:"--"` // Not supported from server
+	SourcePath string `json:"source,-"` // Not supported from server
 
 	DirectImport       bool             `json:"direct"`
-	TargetDirectories  sort.StringArray `json:"--"` // Not supported from server
-	FilterDependencies sort.StringArray `json:"syncTargets"`
+	TargetDirectories  sort.StringArray `json:"searchLibs"` // Not supported from server
+	FilterDependencies sort.StringArray `json:"syncLibs"`
 
 	LogLevel com.LogLevel
 }
@@ -102,10 +102,12 @@ func (mu *MU) performThenClose() {
 func (mu *MU) perform() {
 	switch mu.Options.Action {
 	case "auto-tag":
-		for _, dep := range mu.Options.FilterDependencies {
-			f := &com.FileWrapper{Path: dep}
-			f.AddGitWorkflow()
-		}
+		/*
+			for _, dep := range mu.Options.FilterDependencies {
+				f := &com.FileWrapper{Path: dep}
+				f.AddGitWorkflow()
+			}
+		*/
 		return
 	case "auto-sync":
 		return
