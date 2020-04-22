@@ -175,7 +175,6 @@ func (file *FileWrapper) AddSecret(name, secret string) (err error) {
 		return
 	}
 
-	file.Output("Encrypting secret...")
 	post := &secretRequest{Encrypted: encrypted, KeyID: id}
 	data, err := json.Marshal(post)
 	if err != nil {

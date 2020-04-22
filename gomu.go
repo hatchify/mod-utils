@@ -27,21 +27,21 @@ type MU struct {
 
 // Options represents different settings to perform an action
 type Options struct {
-	Action string
+	Action string `json:"--"` // Not supported from server
 
-	Branch        string
-	CommitMessage string
+	Branch        string `json:"branch"`
+	CommitMessage string `json:"message"`
 
-	Commit      bool
-	PullRequest bool
-	Tag         bool
-	SetVersion  string
+	Commit      bool   `json"--"` // Not supported from server
+	PullRequest bool   `json:"createPR"`
+	Tag         bool   `json:"shouldTag"`
+	SetVersion  string `json:"setVersion"`
 
-	SourcePath string
+	SourcePath string `json:"--"` // Not supported from server
 
-	DirectImport       bool
-	TargetDirectories  sort.StringArray
-	FilterDependencies sort.StringArray
+	DirectImport       bool             `json:"direct"`
+	TargetDirectories  sort.StringArray `json:"--"` // Not supported from server
+	FilterDependencies sort.StringArray `json:"syncTargets"`
 
 	LogLevel com.LogLevel
 }
@@ -100,6 +100,17 @@ func (mu *MU) performThenClose() {
 }
 
 func (mu *MU) perform() {
+	switch mu.Options.Action {
+	case "auto-tag":
+		for _, dep := range mu.Options.FilterDependencies {
+			f := &com.FileWrapper{Path: dep}
+			f.AddGitWorkflow()
+		}
+		return
+	case "auto-sync":
+		return
+	}
+
 	if mu.Options.PullRequest {
 		authObject, err := com.LoadAuth()
 		if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
@@ -257,13 +268,8 @@ func (mu *MU) perform() {
 			return
 		}
 
-		if mu.Options.Action == "workflow" {
-			// Add auto tag workflow
-			lib.File.AddGitWorkflow(mu.Options.SourcePath)
-		} else {
-			// Aggregate updated versions of previously parsed deps
-			lib.ModAddDeps(fileHead, false)
-		}
+		// Aggregate updated versions of previously parsed deps
+		lib.ModAddDeps(fileHead, false)
 
 		mu.commit(lib)
 
