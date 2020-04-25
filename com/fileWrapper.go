@@ -64,7 +64,7 @@ func (file *FileWrapper) GetGoURL() (url string) {
 func (file *FileWrapper) DirectlyImports(dep *FileWrapper) bool {
 	// Read library/go.mod
 	if libMod, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
-		return strings.Contains(string(libMod), "/"+dep.Path+" v")
+		return strings.Contains(string(libMod), "/"+dep.RepoName()+" v")
 	}
 
 	return false
@@ -79,7 +79,7 @@ func (file *FileWrapper) DirectlyImportsAny(deps []*FileWrapper) bool {
 
 		// Check each dep in parsed sum
 		for i := range deps {
-			if strings.Contains(goSum, "/"+deps[i].Path+" v") {
+			if strings.Contains(goSum, "/"+deps[i].RepoName()+" v") {
 				// This lib is necessary
 				return true
 			}
@@ -94,7 +94,7 @@ func (file *FileWrapper) DirectlyImportsAny(deps []*FileWrapper) bool {
 func (file *FileWrapper) DependsOn(dep *FileWrapper) bool {
 	// Read library/go.sum
 	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.sum")); err == nil {
-		return strings.Contains(string(libSum), "/"+dep.Path+" v")
+		return strings.Contains(string(libSum), "/"+dep.RepoName()+" v")
 	}
 
 	return false
@@ -109,7 +109,7 @@ func (file *FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 
 		// Check each dep in parsed sum
 		for i := range deps {
-			if strings.Contains(goSum, "/"+deps[i].Path+" v") {
+			if strings.Contains(goSum, "/"+deps[i].RepoName()+" v") {
 				// This lib is necessary
 				return true
 			}
@@ -129,4 +129,10 @@ func (file *FileWrapper) MatchesAny(deps []*FileWrapper) bool {
 	}
 
 	return false
+}
+
+// RepoName returns the last token in the file path
+func (file *FileWrapper) RepoName() string {
+	_, repo := path.Split(file.Path)
+	return repo
 }

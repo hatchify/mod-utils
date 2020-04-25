@@ -80,6 +80,7 @@ func (authObject *GitAuthObject) Save() (err error) {
 	return ioutil.WriteFile(path.Join(usr.HomeDir, configName), data, os.ModePerm)
 }
 
+// Encrypt will salt a secret using sodium lib, and return the encrypted value
 func (authObject *GitAuthObject) Encrypt(secret, key string) (encrypted string, err error) {
 	// TODO: Sodium encrypt https://help.github.com/actions/automating-your-workflow-with-github-actions/creating-and-using-encrypted-secrets
 
