@@ -170,6 +170,7 @@ func (mu *MU) perform() {
 
 	// TODO: Also add check to warn/confirm before pushing? It'd be nice to have a chance to backout both before and after changes took place
 	// Eventual "undo" action possibly?
+	// TODO: Move warning checks to client instead of utils lib, handle differently in plugin vs cli. Slack approval like release train?
 	switch mu.Options.Action {
 	case "sync":
 		warningLibs := make([]string, mu.Stats.DepCount)
