@@ -57,11 +57,22 @@ func LoadAuth() (authObject GitAuthObject, err error) {
 	if err != nil {
 		return
 	}
+
 	file, err := ioutil.ReadFile(path.Join(usr.HomeDir, configName))
 	if err != nil {
 		return
 	}
+
 	err = json.Unmarshal(file, &authObject)
+	if err != nil {
+		return
+	}
+
+	if len(authObject.User) == 0 || len(authObject.Token) == 0 {
+		err = fmt.Errorf("auth object missing credentials")
+		return
+	}
+
 	return
 }
 
@@ -158,6 +169,7 @@ func (authObject *GitAuthObject) GetPublicKey(goURL string) (id, key string, err
 }
 
 // Setup configures credentials from user input
+// TODO: Move this to CLI? Need to handle differently for plugin...
 func (authObject *GitAuthObject) Setup() (err error) {
 	if logLevel <= SILENT {
 		err = fmt.Errorf("unable to read credentials. auth token or user name not found")
@@ -209,5 +221,27 @@ func (authObject *GitAuthObject) Setup() (err error) {
 	if err != nil {
 		Println("Nevermind then... :(")
 	}
+	return
+}
+
+func getAuth() (authObject GitAuthObject, err error) {
+	if authObject, err = LoadAuth(); err == nil {
+		// Auth is valid
+		return
+	}
+
+	// Reset err
+	err = nil
+	err = getNewCredentials(authObject)
+
+	return
+}
+
+func getNewCredentials(authObject GitAuthObject) (err error) {
+	// Get new creds
+	if err = authObject.Setup(); err != nil {
+		return fmt.Errorf("Unable to parse github username and token")
+	}
+
 	return
 }

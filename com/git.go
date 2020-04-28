@@ -128,36 +128,31 @@ func (file *FileWrapper) CurrentBranch() (branch string, err error) {
 
 // AddSecret will set a secret for the repository
 func (file *FileWrapper) AddSecret(name, secret string) (err error) {
-	comps := strings.Split(file.GetGoURL(), "/")
+	var comps = strings.Split(file.GetGoURL(), "/")
+
 	switch comps[0] {
 	case "github.com":
 		// Supported
 	default:
 		// Not Supported
-		err = fmt.Errorf("%s currently not supported for secretes", comps[0])
+		err = fmt.Errorf("%s currently not supported for secrets", comps[0])
 		return
 	}
-	apiURL := "https://api." + comps[0]
-	resource := "/repos/" + strings.Join(comps[1:], "/") + "/actions/secrets/" + name
 
-	u, err := url.ParseRequestURI(apiURL)
-	if err != nil {
-		err = fmt.Errorf("Unable to url %s", apiURL)
+	var apiURL = "https://api." + comps[0]
+	var resource = "/repos/" + strings.Join(comps[1:], "/") + "/actions/secrets/" + name
+
+	var u *url.URL
+	if u, err = url.ParseRequestURI(apiURL); err != nil {
+		err = fmt.Errorf("Unable to parse url %s", apiURL)
 		return
 	}
 
 	// Get auth token
-	authObject, err := LoadAuth()
-	if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
+	authObject, err := getAuth()
+	if err != nil {
 		// Get new creds
-		file.Output("Needs github credentials for PR...")
-		if authObject.Setup() != nil {
-			file.Output("Error saving :(")
-			err = fmt.Errorf("Unable to parse github username and token")
-			return
-		}
-		err = nil
-		file.Output("Saved Credentials!")
+		return fmt.Errorf("needs github credentials for PR")
 	}
 
 	file.Output("Getting encryption key...")
@@ -190,6 +185,7 @@ func (file *FileWrapper) AddSecret(name, secret string) (err error) {
 	if err != nil {
 		return
 	}
+
 	req.Header.Add("Authorization", "token "+authObject.Token)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
@@ -260,9 +256,9 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	apiURL := "https://api." + comps[0]
 	resource := "/repos/" + strings.Join(comps[1:], "/") + "/pulls"
 
-	u, err := url.ParseRequestURI(apiURL)
-	if err != nil {
-		err = fmt.Errorf("Unable to url %s", apiURL)
+	var u *url.URL
+	if u, err = url.ParseRequestURI(apiURL); err != nil {
+		err = fmt.Errorf("Unable to parse url %s", apiURL)
 		return
 	}
 
@@ -274,6 +270,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 			return
 		}
 	}
+
 	post := &prRequest{title, message, branch, target}
 	data, err := json.Marshal(post)
 	if err != nil {
@@ -282,17 +279,10 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	}
 
 	// Get auth token
-	authObject, err := LoadAuth()
-	if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
-		// Get new creds
-		file.Output("Needs github credentials for PR...")
-		if authObject.Setup() != nil {
-			file.Output("Error saving :(")
-			err = fmt.Errorf("Unable to parse github username and token")
-			return
-		}
-		err = nil
-		file.Output("Saved Credentials!")
+	authObject, err := getAuth()
+	if err != nil {
+		err = fmt.Errorf("needs github credentials for PR")
+		return
 	}
 
 	// Make request
@@ -303,6 +293,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 	if err != nil {
 		return
 	}
+
 	req.Header.Add("Authorization", "token "+authObject.Token)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
@@ -319,6 +310,7 @@ func (file *FileWrapper) PullRequest(title, message, branch, target string) (sta
 		return
 	}
 	resp.Body.Close()
+
 	payload := &PRResponse{}
 	err = json.Unmarshal(body, payload)
 
