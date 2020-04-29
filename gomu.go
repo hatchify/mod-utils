@@ -27,19 +27,21 @@ type MU struct {
 
 // Options represents different settings to perform an action
 type Options struct {
-	Action string
+	Action string `json:"action,-"` // Not supported from server
 
-	Branch        string
-	CommitMessage string
+	Branch        string `json:"branch"`
+	CommitMessage string `json:"message"`
 
-	Commit      bool
-	PullRequest bool
-	Tag         bool
-	SetVersion  string
+	Commit      bool   `json:"commit,-"` // Not supported from server
+	PullRequest bool   `json:"createPR"`
+	Tag         bool   `json:"shouldTag"`
+	SetVersion  string `json:"setVersion"`
 
-	DirectImport       bool
-	TargetDirectories  sort.StringArray
-	FilterDependencies sort.StringArray
+	SourcePath string `json:"source,-"` // Not supported from server
+
+	DirectImport       bool             `json:"direct"`
+	TargetDirectories  sort.StringArray `json:"searchLibs"` // Not supported from server
+	FilterDependencies sort.StringArray `json:"syncLibs"`
 
 	LogLevel com.LogLevel
 }
@@ -98,6 +100,19 @@ func (mu *MU) performThenClose() {
 }
 
 func (mu *MU) perform() {
+	switch mu.Options.Action {
+	case "auto-tag":
+		/*
+			for _, dep := range mu.Options.FilterDependencies {
+				f := &com.FileWrapper{Path: dep}
+				f.AddGitWorkflow()
+			}
+		*/
+		return
+	case "auto-sync":
+		return
+	}
+
 	if mu.Options.PullRequest {
 		authObject, err := com.LoadAuth()
 		if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
@@ -155,6 +170,7 @@ func (mu *MU) perform() {
 
 	// TODO: Also add check to warn/confirm before pushing? It'd be nice to have a chance to backout both before and after changes took place
 	// Eventual "undo" action possibly?
+	// TODO: Move warning checks to client instead of utils lib, handle differently in plugin vs cli. Slack approval like release train?
 	switch mu.Options.Action {
 	case "sync":
 		warningLibs := make([]string, mu.Stats.DepCount)
@@ -235,6 +251,9 @@ func (mu *MU) perform() {
 			continue
 		case "test":
 			mu.test(lib, fileHead)
+			continue
+		case "secret":
+			mu.addSecret(lib)
 			continue
 		}
 

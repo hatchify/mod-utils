@@ -8,10 +8,17 @@ import (
 
 // FileWrapper represents a file object in a double link list, also contains status update info
 type FileWrapper struct {
+	// Private cached values
+	absPath string
+	goURL   string
+
+	// Relative or absolute path to file from working dir
 	Path string
 
+	// Optional value to set or match
 	Version string
 
+	// Status flags
 	Updated       bool
 	Tagged        bool
 	Committed     bool
@@ -35,14 +42,25 @@ func (file *FileWrapper) Debug(message string) {
 	Debugln(file.Path, ":DEBUG:", message)
 }
 
-// AbsPath returns the current absolute directory of the calling lib
-func (file *FileWrapper) AbsPath() string {
-	dir, _ := file.CmdOutput("pwd")
-	return dir
+func (file *FileWrapper) containedIn(modfileContent string) bool {
+	return strings.Contains(modfileContent, file.GetGoURL()+" v")
 }
 
-// GetGoURL will return the format of the dependency version <github.com/hatchify/mod-common>
-func (file *FileWrapper) GetGoURL() (url string) {
+// AbsPath returns the current absolute directory of the calling lib
+func (file *FileWrapper) AbsPath() string {
+	if len(file.absPath) == 0 {
+		file.absPath, _ = file.CmdOutput("pwd")
+	}
+
+	return file.absPath
+}
+
+// GetGoURL will return the format of the dependency version <github.com/hatchify/mod-utils>
+func (file *FileWrapper) GetGoURL() string {
+	if len(file.goURL) > 0 {
+		return file.goURL
+	}
+
 	dir := file.AbsPath()
 
 	// Parse go/src out of absolute path
@@ -50,13 +68,13 @@ func (file *FileWrapper) GetGoURL() (url string) {
 
 	if len(components) != 2 {
 		// We have a problem.. No go url found
-		file.Output("Unable to parse go url from dir <" + dir + "> defaulting to file path <" + file.Path + ">")
+		file.Debug("Unable to parse go url from dir <" + dir + "> defaulting to file path <" + file.Path + ">")
 
 		return file.Path
 	}
 
-	url = strings.Trim(components[1], "/")
-	return
+	file.goURL = strings.Trim(components[1], "/")
+	return file.goURL
 }
 
 // DirectlyImports is used to determine direct dependencies.
@@ -64,7 +82,7 @@ func (file *FileWrapper) GetGoURL() (url string) {
 func (file *FileWrapper) DirectlyImports(dep *FileWrapper) bool {
 	// Read library/go.mod
 	if libMod, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
-		return strings.Contains(string(libMod), "/"+dep.Path+" v")
+		return dep.containedIn(string(libMod))
 	}
 
 	return false
@@ -73,13 +91,13 @@ func (file *FileWrapper) DirectlyImports(dep *FileWrapper) bool {
 // DirectlyImportsAny returns true if file depends on any of the filter deps. Returns false if slice is empty
 func (file *FileWrapper) DirectlyImportsAny(deps []*FileWrapper) bool {
 	// Read library/go.sum once
-	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
+	if libMod, err := ioutil.ReadFile(path.Join(file.Path, "go.mod")); err == nil {
 		// Parse sum once
-		goSum := string(libSum)
+		goMod := string(libMod)
 
 		// Check each dep in parsed sum
-		for i := range deps {
-			if strings.Contains(goSum, "/"+deps[i].Path+" v") {
+		for _, dep := range deps {
+			if dep.containedIn(goMod) {
 				// This lib is necessary
 				return true
 			}
@@ -94,7 +112,7 @@ func (file *FileWrapper) DirectlyImportsAny(deps []*FileWrapper) bool {
 func (file *FileWrapper) DependsOn(dep *FileWrapper) bool {
 	// Read library/go.sum
 	if libSum, err := ioutil.ReadFile(path.Join(file.Path, "go.sum")); err == nil {
-		return strings.Contains(string(libSum), "/"+dep.Path+" v")
+		return dep.containedIn(string(libSum))
 	}
 
 	return false
@@ -108,8 +126,8 @@ func (file *FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 		goSum := string(libSum)
 
 		// Check each dep in parsed sum
-		for i := range deps {
-			if strings.Contains(goSum, "/"+deps[i].Path+" v") {
+		for _, dep := range deps {
+			if dep.containedIn(goSum) {
 				// This lib is necessary
 				return true
 			}
@@ -121,9 +139,9 @@ func (file *FileWrapper) DependsOnAny(deps []*FileWrapper) bool {
 
 // MatchesAny returns true if file matches one of the deps
 func (file *FileWrapper) MatchesAny(deps []*FileWrapper) bool {
-	for i := range deps {
-		if strings.HasSuffix(file.Path, deps[i].Path) {
-			file.Version = deps[i].Version
+	for _, dep := range deps {
+		if strings.HasSuffix(file.GetGoURL(), dep.GetGoURL()) {
+			file.Version = dep.Version
 			return true
 		}
 	}
