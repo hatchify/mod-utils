@@ -42,8 +42,11 @@ func (lib *Library) ModClearFiles() (hasModFile, hasSumFile bool) {
 // ModAddDeps adds a dep@version to go.mod to force-update or force-downgrade any deps in the filtered chain
 func (lib *Library) ModAddDeps(listHead *sort.FileNode, shouldForce bool) {
 	for itr := listHead; itr != nil && itr.File.Path != lib.File.Path; itr = itr.Next {
-		// Check if lib/go.mod includes the file (not go.sum)
-		if (shouldForce || itr.File.Updated || itr.File.Tagged || itr.File.Committed || len(itr.File.Version) != 0) && lib.File.DependsOn(itr.File) {
+		// File has update if it was changed or needs to be explicitly set
+		var hasUpdate = (itr.File.Updated || itr.File.Tagged || itr.File.Committed || len(itr.File.Version) != 0)
+
+		// File should update if forced and direct or indirect, or if has update and direct
+		if (shouldForce && lib.File.DependsOn(itr.File)) || (hasUpdate && lib.File.DirectlyImports(itr.File)) {
 			// Create new node to add to independent list on lib with same file ref
 			var node sort.FileNode
 			node.File = itr.File

@@ -25,36 +25,7 @@ type MU struct {
 	closer *closer.Closer
 }
 
-// Options represents different settings to perform an action
-type Options struct {
-	Action string `json:"action,-"` // Not supported from server
-
-	Branch        string `json:"branch"`
-	CommitMessage string `json:"message"`
-
-	Commit      bool   `json:"commit,-"` // Not supported from server
-	PullRequest bool   `json:"createPR"`
-	Tag         bool   `json:"shouldTag"`
-	SetVersion  string `json:"setVersion"`
-
-	SourcePath string `json:"source,-"` // Not supported from server
-
-	DirectImport       bool             `json:"direct"`
-	TargetDirectories  sort.StringArray `json:"searchLibs"` // Not supported from server
-	FilterDependencies sort.StringArray `json:"syncLibs"`
-
-	LogLevel com.LogLevel
-}
-
 var closed = false
-
-// New returns new Mod Utils struct
-func New(options Options) *MU {
-	var mu MU
-	mu.Stats.Options = &options
-	mu.Options = options
-	return &mu
-}
 
 // Run runs gomu with configured mu.Options
 func (mu *MU) Run() {
