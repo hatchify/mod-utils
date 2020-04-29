@@ -8,12 +8,17 @@ import (
 
 // FileWrapper represents a file object in a double link list, also contains status update info
 type FileWrapper struct {
-	Path    string
+	// Private cached values
 	absPath string
 	goURL   string
 
+	// Relative or absolute path to file from working dir
+	Path string
+
+	// Optional value to set or match
 	Version string
 
+	// Status flags
 	Updated       bool
 	Tagged        bool
 	Committed     bool
