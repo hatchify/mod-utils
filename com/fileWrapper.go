@@ -68,8 +68,6 @@ func (file *FileWrapper) GetGoURL() string {
 
 	if len(components) != 2 {
 		// We have a problem.. No go url found
-		file.Debug("Unable to parse go url from dir <" + dir + "> defaulting to file path <" + file.Path + ">")
-
 		return file.Path
 	}
 
