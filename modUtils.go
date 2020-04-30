@@ -62,7 +62,7 @@ func (lib *Library) ModSetDeps() (err error) {
 		if len(itr.File.Version) == 0 {
 			tempLib := Library{}
 			tempLib.File = itr.File
-			itr.File.Version = tempLib.GetCurrentTag()
+			itr.File.Version = tempLib.GetLatestTag()
 		}
 
 		url := itr.File.GetGoURL()
@@ -141,7 +141,7 @@ func (lib *Library) ModDeploy(tag, commitMessage string) (deployed bool) {
 	if len(tag) == 0 {
 		version := lib.File.Version
 		if len(version) == 0 && !strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
-			version = lib.GetCurrentTag()
+			version = lib.GetLatestTag()
 		}
 
 		if len(version) == 0 {

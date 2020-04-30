@@ -146,7 +146,7 @@ func (mu *MU) tag(lib Library) {
 
 	// Set tag for next lib if not set
 	if len(lib.File.Version) == 0 {
-		lib.File.Version = lib.GetCurrentTag()
+		lib.File.Version = lib.GetLatestTag()
 	}
 }
 
