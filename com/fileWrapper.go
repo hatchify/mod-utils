@@ -29,17 +29,17 @@ type FileWrapper struct {
 
 // Debug prints a message to stdout if debug is true
 func (file *FileWrapper) Error(message string) {
-	Errorln(file.GetGoURL(), ":ERROR:", message)
+	Errorln(file.goURL, ":ERROR:", message)
 }
 
 // Output prints a message to stdout
 func (file *FileWrapper) Output(message string) {
-	Println(file.GetGoURL(), "::", message)
+	Println(file.goURL, "::", message)
 }
 
 // Debug prints a message to stdout if debug is true
 func (file *FileWrapper) Debug(message string) {
-	Debugln(file.GetGoURL(), ":DEBUG:", message)
+	Debugln(file.goURL, ":DEBUG:", message)
 }
 
 func (file *FileWrapper) containedIn(modfileContent string) bool {
@@ -68,6 +68,7 @@ func (file *FileWrapper) GetGoURL() string {
 
 	if len(components) != 2 {
 		// We have a problem.. No go url found
+		file.goURL = file.Path
 		return file.Path
 	}
 
