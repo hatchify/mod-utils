@@ -29,17 +29,17 @@ type FileWrapper struct {
 
 // Debug prints a message to stdout if debug is true
 func (file *FileWrapper) Error(message string) {
-	Errorln(file.Path, ":ERROR:", message)
+	Errorln(file.GetGoURL(), ":ERROR:", message)
 }
 
 // Output prints a message to stdout
 func (file *FileWrapper) Output(message string) {
-	Println(file.Path, "::", message)
+	Println(file.GetGoURL(), "::", message)
 }
 
 // Debug prints a message to stdout if debug is true
 func (file *FileWrapper) Debug(message string) {
-	Debugln(file.Path, ":DEBUG:", message)
+	Debugln(file.GetGoURL(), ":DEBUG:", message)
 }
 
 func (file *FileWrapper) containedIn(modfileContent string) bool {
