@@ -215,17 +215,40 @@ func (file *FileWrapper) AddGitWorkflow(exampleYmlPath string) (err error) {
 	ymlSource := &FileWrapper{Path: sourceDir}
 	templateSouce := path.Join(ymlSource.AbsPath(), ymlTemplate)
 
+	if ymlTemplate == "auto-tag.yml" {
+		err = file.RunCmd("git-tagger", "--action=get")
+		if err != nil {
+			// No tag set. skip tag
+			file.Output("No tag set... Skipping.")
+			return
+		}
+	}
+
 	// Prep workflow dir
-	workflowPath := path.Join(".git", "workflows")
+	workflowPath := path.Join(".github", "workflows")
 	file.RunCmd("mkdir -p", workflowPath)
 	newWorkflow := path.Join(workflowPath, ymlTemplate)
 
+	file.Output("Copying " + exampleYmlPath + " to " + workflowPath + "...")
 	// Copy example yml file to workflow dir
 	if file.RunCmd("cp", templateSouce, newWorkflow) != nil {
 		err = fmt.Errorf("Unable to copy %s to %s", exampleYmlPath, workflowPath)
 		return
 	}
 
+	if file.Add(path.Join(workflowPath, ymlTemplate)) != nil {
+		return fmt.Errorf("Unable to add workflow path")
+	}
+
+	if file.Commit("Added workflow: "+ymlTemplate) != nil {
+		return fmt.Errorf("Unable to commit workflow")
+	}
+
+	if file.Push() != nil {
+		return fmt.Errorf("Unable to push workflow changes")
+	}
+
+	file.Output("Workflow added successfully!")
 	return
 }
 

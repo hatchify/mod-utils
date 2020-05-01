@@ -93,7 +93,7 @@ func (lib *Library) GetLatestTag() (currentTag string) {
 	output, err := lib.File.CmdOutput("git-tagger", "--action=get")
 	if err != nil {
 		// No tag set. skip tag
-		lib.File.Output("Unable to update tag.")
+		lib.File.Output("Unable to fetch tag.")
 		return
 	}
 

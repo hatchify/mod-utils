@@ -71,19 +71,6 @@ func (mu *MU) performThenClose() {
 }
 
 func (mu *MU) perform() {
-	switch mu.Options.Action {
-	case "auto-tag":
-		/*
-			for _, dep := range mu.Options.FilterDependencies {
-				f := &com.FileWrapper{Path: dep}
-				f.AddGitWorkflow()
-			}
-		*/
-		return
-	case "auto-sync":
-		return
-	}
-
 	if mu.Options.PullRequest {
 		authObject, err := com.LoadAuth()
 		if err != nil || len(authObject.User) == 0 || len(authObject.Token) == 0 {
@@ -222,6 +209,11 @@ func (mu *MU) perform() {
 			continue
 		case "test":
 			mu.test(lib, fileHead)
+			continue
+		case "workflow":
+			if lib.File.AddGitWorkflow(mu.Options.SourcePath) != nil {
+				lib.File.Output("Failed to add workflow :(")
+			}
 			continue
 		case "secret":
 			mu.addSecret(lib)
