@@ -47,7 +47,7 @@ func (lib *Library) ShouldTag() (shouldTag bool) {
 		return
 	}
 
-	lib.File.RunCmd("git", "pull", "--tag")
+	lib.File.RunCmd("git", "fetch", "--tag", "--prune")
 
 	// Check if tag is up to date
 	stdout, err := lib.File.CmdOutput("git-tagger", "--action=get")
