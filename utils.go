@@ -364,7 +364,23 @@ func (mu *MU) pull(lib Library) {
 }
 
 func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err error) {
-	lib.File.Fetch()
+	lib.File.Output("Updating refs...")
+	if len(lib.File.Version) == 0 && !mu.Options.Tag {
+		// TODO: Improve the performance of this check by explicitly looking at commit tag?
+		// Check if tag changed
+		oldTag := lib.GetLatestTag()
+		lib.File.Fetch()
+		newTag := lib.GetLatestTag()
+
+		// Force version update
+		if oldTag != newTag {
+			lib.File.Output("Tag was out of date, setting explicit version.")
+			lib.File.Tagged = true
+		}
+	} else {
+		// Version already set, just update
+		lib.File.Fetch()
+	}
 
 	if len(mu.Options.Branch) > 0 {
 		switched, created, err = lib.File.CheckoutOrCreateBranch(mu.Options.Branch)
