@@ -364,6 +364,8 @@ func (mu *MU) pull(lib Library) {
 }
 
 func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err error) {
+	lib.File.Fetch()
+
 	if len(mu.Options.Branch) > 0 {
 		switched, created, err = lib.File.CheckoutOrCreateBranch(mu.Options.Branch)
 		if err != nil {

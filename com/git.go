@@ -219,7 +219,8 @@ func (file *FileWrapper) AddGitWorkflow(exampleYmlPath string) (err error) {
 	if ymlTemplate == "auto-tag.yml" {
 		if file.RunCmd("git-tagger", "--action=get") != nil {
 			// No tag set. skip tag
-			return fmt.Errorf("No tag set... Skipping.")
+			err = fmt.Errorf("No tag set... Skipping")
+			return
 		}
 	}
 
