@@ -215,18 +215,18 @@ func (file *FileWrapper) AddGitWorkflow(exampleYmlPath string) (err error) {
 	ymlSource := &FileWrapper{Path: sourceDir}
 	templateSouce := path.Join(ymlSource.AbsPath(), ymlTemplate)
 
+	// Ignore auto tag for un-tagged libs
 	if ymlTemplate == "auto-tag.yml" {
-		err = file.RunCmd("git-tagger", "--action=get")
-		if err != nil {
+		if file.RunCmd("git-tagger", "--action=get") != nil {
 			// No tag set. skip tag
-			file.Output("No tag set... Skipping.")
-			return
+			return fmt.Errorf("No tag set... Skipping.")
 		}
 	}
 
 	// Prep workflow dir
 	workflowPath := path.Join(".github", "workflows")
-	file.RunCmd("mkdir -p", workflowPath)
+	file.RunCmd("mkdir", ".github")
+	file.RunCmd("mkdir", workflowPath)
 	newWorkflow := path.Join(workflowPath, ymlTemplate)
 
 	file.Output("Copying " + exampleYmlPath + " to " + workflowPath + "...")

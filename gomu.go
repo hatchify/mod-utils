@@ -211,8 +211,8 @@ func (mu *MU) perform() {
 			mu.test(lib, fileHead)
 			continue
 		case "workflow":
-			if lib.File.AddGitWorkflow(mu.Options.SourcePath) != nil {
-				lib.File.Output("Failed to add workflow :(")
+			if err := lib.File.AddGitWorkflow(mu.Options.SourcePath); err != nil {
+				lib.File.Output("Failed to add workflow " + err.Error() + " :(")
 			}
 			continue
 		case "secret":
