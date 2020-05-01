@@ -369,13 +369,15 @@ func (mu *MU) updateOrCreateBranch(lib Library) (switched, created bool, err err
 		// TODO: Improve the performance of this check by explicitly looking at commit tag?
 		// Check if tag changed
 		oldTag := lib.GetLatestTag()
-		lib.File.Fetch()
-		newTag := lib.GetLatestTag()
+		if len(oldTag) > 0 {
+			lib.File.Fetch()
+			newTag := lib.GetLatestTag()
 
-		// Force version update
-		if oldTag != newTag {
-			lib.File.Output("Tag was out of date, setting explicit version.")
-			lib.File.Tagged = true
+			// Force version update
+			if oldTag != newTag {
+				lib.File.Output("Tag was out of date, setting explicit version.")
+				lib.File.Tagged = true
+			}
 		}
 	} else {
 		// Version already set, just update
