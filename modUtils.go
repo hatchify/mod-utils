@@ -163,12 +163,7 @@ func (lib *Library) ModDeploy(tag, commitMessage string) (deployed bool) {
 	if lib.File.Commit(message) == nil {
 		// Successful commit, push changes
 		deployed = true
-		lib.File.Output("Deploying local changes...")
-		if lib.File.Push() == nil {
-			lib.File.Output("Deploy Complete!")
-		} else {
-			lib.File.Output("Deploy Failed :(")
-		}
+		lib.File.Output("Waiting to deploy local changes on sync...")
 	} else {
 		lib.File.Output("No changes to deploy!")
 	}
@@ -218,7 +213,7 @@ func (lib *Library) ModUpdate(branch, commitMessage string) (err error) {
 	}
 
 	if pushErr := lib.File.Push(); pushErr != nil {
-		lib.File.Output("Push failed :( check local changes")
+		lib.File.Output("Push failed :( check local changes and commit status")
 		return pushErr
 	}
 

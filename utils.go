@@ -108,6 +108,7 @@ func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string
 				return
 			}
 		}
+
 		lib.File.Output("Attempting Pull Request " + branch + " to master...")
 
 		resp, err := lib.File.PullRequest(commitTitle, commitMessage, branch, "master")
