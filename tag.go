@@ -47,8 +47,6 @@ func (lib *Library) ShouldTag() (shouldTag bool) {
 		return
 	}
 
-	lib.File.RunCmd("git", "fetch", "--tag", "--prune")
-
 	// Check if tag is up to date
 	stdout, err := lib.File.CmdOutput("git-tagger", "--action=get")
 	if err != nil {
@@ -88,8 +86,6 @@ func (lib *Library) ShouldTag() (shouldTag bool) {
 // TODO: create GetLatestTag for this functinoality
 // TODO: use git-tagger --action=current to return current tag rather than latest tag
 func (lib *Library) GetLatestTag() (currentTag string) {
-	lib.File.Fetch()
-
 	output, err := lib.File.CmdOutput("git-tagger", "--action=get")
 	if err != nil {
 		// No tag set. skip tag
