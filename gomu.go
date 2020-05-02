@@ -3,12 +3,15 @@ package gomu
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/hatchify/closer"
 	"github.com/hatchify/mod-utils/com"
 	"github.com/hatchify/mod-utils/sort"
+
+	"github.com/remeh/sizedwaitgroup"
 )
 
 // MU represents a Mod Utils instance which sets options from flags and allows actions to be called
@@ -171,11 +174,13 @@ func (mu *MU) perform() {
 
 	// Perform action on sorted libs
 	index := 0
+	waiter := sizedwaitgroup.New(runtime.GOMAXPROCS(0))
 	for itr := fileHead; itr != nil; itr = itr.Next {
 		index++
 
 		if closed {
 			// Stop execution and clean up
+			waiter.Wait()
 			return
 		}
 
@@ -185,40 +190,80 @@ func (mu *MU) perform() {
 			continue
 		}
 
-		// Separate output
-		com.Println("")
-		com.Println("(", index, "/", mu.Stats.DepCount, ")", itr.File.Path)
-
 		// Create sync lib ref from dep file
 		var lib Library
 		lib.File = itr.File
 
 		switch mu.Options.Action {
 		case "pull":
-			if len(lib.File.Version) > 0 {
-				lib.File.Output("Already has version set: " + lib.File.Version)
-			} else {
-				mu.pull(lib)
-			}
+			waiter.Add()
+			go func(index int, lib Library) {
+				// Separate output
+				com.Println("")
+				com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
+
+				if len(lib.File.Version) > 0 {
+					lib.File.Output("Already has version set: " + lib.File.Version)
+				} else {
+					mu.pull(lib)
+				}
+
+				waiter.Done()
+			}(index, lib)
 			continue
 		case "replace":
-			mu.replace(lib, fileHead)
+			waiter.Add()
+			go func(index int, lib Library) {
+				// Separate output
+				com.Println("")
+				com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
+
+				mu.replace(lib, fileHead)
+
+				waiter.Done()
+			}(index, lib)
 			continue
 		case "reset":
-			mu.reset(lib)
+			waiter.Add()
+			go func(index int, lib Library) {
+				// Separate output
+				com.Println("")
+				com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
+
+				mu.reset(lib)
+
+				waiter.Done()
+			}(index, lib)
 			continue
 		case "test":
+			// Separate output
+			com.Println("")
+			com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
 			mu.test(lib, fileHead)
 			continue
 		case "workflow":
-			if err := lib.File.AddGitWorkflow(mu.Options.SourcePath); err != nil {
-				lib.File.Output("Failed to add workflow " + err.Error() + " :(")
-			}
+			waiter.Add()
+			go func(index int, lib Library) {
+				// Separate output
+				com.Println("")
+				com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
+
+				if err := lib.File.AddGitWorkflow(mu.Options.SourcePath); err != nil {
+					lib.File.Output("Failed to add workflow " + err.Error() + " :(")
+				}
+
+				waiter.Done()
+			}(index, lib)
 			continue
 		case "secret":
-			mu.addSecret(lib)
-			continue
+			//mu.addSecret(lib)
+			println("Secrets unsupported without salt :(")
+			return
 		}
+
+		// Separate output
+		com.Println("")
+		com.Println("(", index, "/", mu.Stats.DepCount, ")", itr.File.Path)
 
 		// Sync
 		if len(lib.File.Version) > 0 {
@@ -269,6 +314,8 @@ func (mu *MU) perform() {
 
 		mu.tag(lib)
 	}
+
+	waiter.Wait()
 
 	if com.GetLogLevel() == com.NAMEONLY {
 		// Print names and quit

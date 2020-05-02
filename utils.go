@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/hatchify/mod-utils/com"
 	"github.com/hatchify/mod-utils/sort"
+	"github.com/remeh/sizedwaitgroup"
 )
 
 // exitWithErrorMessage prints message and exits
@@ -68,14 +70,24 @@ func ShowWarning(message string) (ok bool) {
 func cleanupStash(libs sort.StringArray) {
 	closed = true
 
+	waiter := sizedwaitgroup.New(runtime.GOMAXPROCS(0))
+
 	// Resume working directory
 	var f com.FileWrapper
 	for i := range libs {
 		f.Path = libs[i]
-		if f.StashPop() {
-			f.Output("Warning - Has local changes")
-		}
+
+		waiter.Add()
+		go func(f com.FileWrapper) {
+			if f.StashPop() {
+				f.Output("Warning - Has local changes")
+			}
+
+			waiter.Done()
+		}(f)
 	}
+
+	waiter.Wait()
 }
 
 func (mu *MU) sync(lib Library, commitTitle, commitMessage string) {
