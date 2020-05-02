@@ -2,3 +2,5 @@ github.com/hatchify/atoms v0.4.77 h1:JGBaNULC3Kx8LiKvxkgcNxafM5P063soeoiKvTs+m/o
 github.com/hatchify/atoms v0.4.77/go.mod h1:6H72BaBb4o7EHfkGXb3AriWU0S5CSrW1kDDHdjdeNB8=
 github.com/hatchify/closer v0.4.78 h1:mwI0j5kvwEPeZ8AQ35rQfuPGM4VUt/gtjI3ASsqYTio=
 github.com/hatchify/closer v0.4.78/go.mod h1:9Wj3IOc9TYssGRiKcMFtK+kZXSuOzP8N7cel9OIhB1M=
+github.com/remeh/sizedwaitgroup v1.0.0 h1:VNGGFwNo/R5+MJBf6yrsr110p0m4/OX4S3DCy7Kyl5E=
+github.com/remeh/sizedwaitgroup v1.0.0/go.mod h1:3j2R4OIe/SeS6YDhICBy22RWjJC5eNCJ1V+9+NVNYlo=
