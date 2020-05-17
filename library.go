@@ -12,6 +12,11 @@ type Library struct {
 	updatedDeps *sort.FileNode
 }
 
+// LibraryFromPath returns a library reference for a filepath
+func LibraryFromPath(filepath string) *Library {
+	return &Library{File: &com.FileWrapper{Path: filepath}}
+}
+
 // AddDep will ensure go.mod sets specific version of node.file when syncing
 func (lib *Library) AddDep(node *sort.FileNode) {
 	node.InsertInto(&lib.updatedDeps)
