@@ -42,11 +42,6 @@ func (lib *Library) TagLib(tag string) (newTag string) {
 
 // ShouldTag returns true if not a plugin and has a tag that is out of date
 func (lib *Library) ShouldTag() (shouldTag bool) {
-	if strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
-		lib.File.Output("Not tagging plugins. Skipping tag.")
-		return
-	}
-
 	// Check if tag is up to date
 	stdout, err := lib.File.CmdOutput("git-tagger", "--action=get")
 	if err != nil {

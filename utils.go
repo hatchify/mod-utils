@@ -135,7 +135,7 @@ func (mu *MU) pullRequest(lib Library, branch, commitTitle, commitMessage string
 }
 
 func (mu *MU) tag(lib Library) {
-	if !mu.Options.Tag || strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
+	if !mu.Options.Tag {
 		// Ignore tagging entirely
 		return
 	}
