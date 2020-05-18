@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 
 	"github.com/hatchify/mod-utils/sort"
 )
@@ -140,15 +139,9 @@ func (lib *Library) ModDeploy(tag, commitMessage string) (deployed bool) {
 	message := ""
 	if len(tag) == 0 {
 		version := lib.File.Version
-		if len(version) == 0 && !strings.HasSuffix(strings.Trim(lib.File.Path, "/"), "-plugin") {
-			version = lib.GetLatestTag()
-		}
 
 		if len(version) == 0 {
 			message = "gomu: Deploy local changes"
-			// Set old version of libs in case they weren't updated previously
-			lib.File.Version = version
-
 		} else {
 			message = "gomu: Deploy local changes before incrementing version from " + version
 		}
