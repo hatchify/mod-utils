@@ -212,16 +212,11 @@ func (mu *MU) perform() {
 			}(index, lib)
 			continue
 		case "replace":
-			waiter.Add()
-			go func(index int, lib Library) {
-				// Separate output
-				com.Println("")
-				com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
+			// Separate output
+			com.Println("")
+			com.Println("(", index, "/", mu.Stats.DepCount, ")", lib.File.Path)
 
-				mu.replace(lib, fileHead)
-
-				waiter.Done()
-			}(index, lib)
+			mu.replace(lib, fileHead)
 			continue
 		case "reset":
 			waiter.Add()
