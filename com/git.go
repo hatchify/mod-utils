@@ -45,7 +45,7 @@ func (file *FileWrapper) CheckoutOrCreateBranch(branch string) (switched, create
 
 // Fetch calls git fetch in provided dir
 func (file *FileWrapper) Fetch() (err error) {
-	return file.RunCmd("git", "fetch", "--prune", "--prune-tags", "--force")
+	return file.RunCmd("git", "fetch", "--all", "--tags", "--prune", "--prune-tags", "--force")
 }
 
 // Merge merges other branch into current branch
